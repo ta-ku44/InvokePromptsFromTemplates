@@ -6,5 +6,5 @@ export interface Template {
 
 export interface StorageData {
   templates: Template[];
-  triggerChar: string;
+  triggerCommand: string;
 }
