@@ -11,8 +11,7 @@
         "https://gemini.google.com/*",
         "https://claude.ai/*"
       ],
-      "js": ["src/content/content.js"],
-      "css": ["src/content/styles.css"]
+      "js": ["src/content/index.tsx"]
     }
   ],
   "options_page": "src/options/index.html",
