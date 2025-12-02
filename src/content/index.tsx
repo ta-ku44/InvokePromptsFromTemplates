@@ -1,31 +1,57 @@
 import { loadStoredData } from '../utils/storage';
 
 let currentTextArea: HTMLElement | null = null;
+let observer: MutationObserver | null = null;
 
 const init = () => {
   console.log('PromptTemplateを初期化:',window.location.href);
-
-  if (currentTextArea) {
-    currentTextArea.removeEventListener('input', handleInput);
-    currentTextArea = null;
-  }
+  
+  cleanUp();
 
   const checkInterval = setInterval(() => {
     const textAreas = findTextAreas();{
       if (textAreas) {
         console.log('入力欄を取得:', textAreas);
-
-        textAreas.addEventListener('input', handleInput);
-        currentTextArea = textAreas;
-
+        
+        registerTextArea(textAreas);
         clearInterval(checkInterval);
       } else {
         console.warn('入力欄はまだ未取得');
       }
     }
-  }, 1000);
+  }, 500);
 
   setTimeout(() => clearInterval(checkInterval), 10000);
+}
+
+const cleanUp = () => {
+  if (currentTextArea) {
+    currentTextArea.removeEventListener('input', handleInput);
+    currentTextArea = null;
+  }
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+}
+
+const registerTextArea = (textarea: HTMLElement) => {
+  currentTextArea = textarea;
+  textarea.addEventListener('input', handleInput);
+
+  observeTextArea();
+  console.log('入力欄を登録:', textarea);
+}
+
+const observeTextArea = () => {
+  observer = new MutationObserver(()=> {
+    if (currentTextArea && !document.contains(currentTextArea)) {
+      console.log('入力欄がDOMから削除、監視を再開');
+      init();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 //* 入力欄が有効かチェック */
@@ -76,7 +102,7 @@ const showDropdown = async (query: string, textarea: HTMLElement) => {
     t.name.toLowerCase().includes(query.toLowerCase())
   );
 
-  if (templates.length > 0) return;
+  if (templates.length === 0) return;
   console.log('テンプレート候補:', templates);
   console.log('ドロップダウンを表示:', textarea);
 }
