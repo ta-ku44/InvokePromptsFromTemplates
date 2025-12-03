@@ -8,6 +8,7 @@ import { handleTemplateSelect } from './index.tsx';
 let root : Root | null = null;
 let container : HTMLElement | null = null;
 
+//** サジェストを表示 */
 const viewSuggest =  async (query: string, textArea: HTMLElement | null) => {
   if (!textArea) return;
 
@@ -28,12 +29,23 @@ const viewSuggest =  async (query: string, textArea: HTMLElement | null) => {
 
   // サジェストの位置を計算
   const rect = textArea.getBoundingClientRect();
+  const suggestHeight = Math.min(templates.length * 40 + 50, 300);
+  const viewportHeight = window.innerHeight;
+
+  // 画面下に収まるかチェック
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const showAbove = spaceBelow < suggestHeight && spaceAbove > spaceBelow;
+
+  // 上に表示する場合は入力欄の上端から、下に表示する場合は入力欄の下端から
+  const gap = 12; // 入力欄との間隔
   const position = {
-    top: rect.bottom + window.scrollY,
+    top: showAbove 
+      ? rect.top + window.scrollY - suggestHeight - gap
+      : rect.bottom + window.scrollY + gap,
     left: rect.left + window.scrollX,
-    width: rect.width,
   };
-  console.log('サジェストの位置:', position);
+  console.log('サジェストの位置:', position, showAbove ? '(上に表示)' : '(下に表示)');
 
   // 既存のコンテナが存在しなければコンテナを作成
   if (!container) {
@@ -48,7 +60,7 @@ const viewSuggest =  async (query: string, textArea: HTMLElement | null) => {
 
   container.style.top = `${position.top}px`;
   container.style.left = `${position.left}px`;
-  container.style.width = `${position.width}px`;
+  container.style.width = `${rect.width}px`;
   console.log('サジェストコンテナの位置を設定:', container.style.top, container.style.left);
 
   root?.render(
@@ -59,12 +71,13 @@ const viewSuggest =  async (query: string, textArea: HTMLElement | null) => {
         handleTemplateSelect(template);
         hideSuggest();
       }}
-      onClose={hideSuggest}
+      onClose={() => { hideSuggest(); }}
     />
   );
   console.log('サジェストを表示しました');
 }
 
+//** サジェストを非表示 */
 const hideSuggest = () => {
   if (root) {
     root.unmount();
@@ -132,7 +145,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, onSelect, onClose 
     // グループなしのアイテムがあれば "Others" または ヘッダーなしで追加
     if (noGroupItems.length > 0) {
       result.push({
-        title: '', // または空文字
+        title: 'Others', // または空文字
         items: noGroupItems
       });
     }
@@ -144,6 +157,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, onSelect, onClose 
     // CSSクラス 'suggestion-container' を適用
     <div className="pt-suggestion-container" ref={containerRef}>
       <div className='pt-suggestion-scroll-area'>
+        
         {groupedData.map((section, idx) => (
           <div key={idx}>
             {/* セクションヘッダー */}

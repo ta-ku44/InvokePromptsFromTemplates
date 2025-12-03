@@ -4,7 +4,7 @@ import { viewSuggest, hideSuggest } from "./Suggest";
 let currentTextArea: HTMLElement | null = null;
 let observer: MutationObserver | null = null;
 
-const init = () => {
+const init = async () => {
   console.log('PromptTemplateを初期化:',window.location.href);
 
   if (observer) observer.disconnect();
@@ -106,9 +106,40 @@ const handleInput = async (event: Event) => {
 }
 
 const insertTemplate = (template: Template) => {
-  // TODO: テンプレート内容を入力欄に挿入
-  console.log('テンプレート選択:', template);
-  hideSuggest();
+  if (!currentTextArea) return;
+
+  const isTextArea = currentTextArea.tagName.toLowerCase() === 'textarea';
+  
+  if (isTextArea) {
+    // textarea の場合
+    const textarea = currentTextArea as HTMLTextAreaElement;
+    const text = textarea.value;
+    const newText = text.replace(/#\w*$/, template.content);
+    textarea.value = newText;
+    
+    // カーソルを末尾に移動
+    textarea.selectionStart = textarea.selectionEnd = newText.length;
+    
+    // inputイベントを発火
+    textarea.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  } else {
+    // contenteditable / role="textbox" の場合
+    const text = currentTextArea.textContent || '';
+    const newText = text.replace(/#\w*$/, template.content);
+    currentTextArea.textContent = newText;
+    
+    // カーソルを末尾に移動
+    const range = document.createRange();
+    const selection = window.getSelection();
+    range.selectNodeContents(currentTextArea);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    
+    // inputイベントを発火
+    currentTextArea.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  }
+  currentTextArea.focus();
 }
 
 if (document.readyState === 'loading') {
