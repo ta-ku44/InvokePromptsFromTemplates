@@ -1,0 +1,63 @@
+/* リスト全体のコンテナ */
+.pt-suggestion-container {
+  width: 320px;
+  background-color: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* スクロール可能エリア */
+.pt-suggestion-scroll-area {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* スクロールバー改善 */
+.pt-suggestion-scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+.pt-suggestion-scroll-area::-webkit-scrollbar-thumb {
+  background-color: #cfd3da;
+  border-radius: 4px;
+}
+
+/* セクションヘッダー */
+.section-header {
+  padding: 14px 16px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background-color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid #f1f1f1;
+}
+
+/* リストアイテム */
+.list-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #1f2937;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.12s;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+/* ホバー・選択 */
+.list-item:hover,
+.list-item.selected {
+  background-color: #E5F0FF;
+  color: #111827;
+}

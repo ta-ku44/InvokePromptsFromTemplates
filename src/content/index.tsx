@@ -1,11 +1,12 @@
 import type { Template } from "../types";
-import { showAutocomplete, hideAutocomplete } from "./TemplateAutocomplete";
+import { viewSuggest, hideSuggest } from "./Suggest";
 
 let currentTextArea: HTMLElement | null = null;
 let observer: MutationObserver | null = null;
 
 const init = () => {
   console.log('PromptTemplateを初期化:',window.location.href);
+
   if (observer) observer.disconnect();
   tryFindAndRegister();
 
@@ -14,7 +15,7 @@ const init = () => {
     if (currentTextArea && document.body.contains(currentTextArea) && isValidInput(currentTextArea)) return;
     // 既に取得していた入力欄がDOMから削除されていた場合
     if (currentTextArea && !document.body.contains(currentTextArea)) {
-      console.log('現在の入力欄がDOMから削除されました');
+      console.log('現在の入力欄がDOMから削除された');
       cleanUp();
     }
     tryFindAndRegister();
@@ -26,7 +27,7 @@ const init = () => {
 const tryFindAndRegister = () => {
   const textArea = findTextAreas();
   if (textArea && textArea !== currentTextArea) {
-    console.log('新しい入力欄を取得しました');
+    console.log('新しい入力欄を取得した');
     registerTextArea(textArea);
   } 
 }
@@ -98,16 +99,16 @@ const handleInput = async (event: Event) => {
   const match = text.match(/#(\w*)$/);
   if (match) {
     const query = match[1];
-    await showAutocomplete(query, currentTextArea);
+    await viewSuggest(query, currentTextArea);
   } else {
-    hideAutocomplete();
+    hideSuggest();
   }
 }
 
-const handleTemplateSelect = (template: Template) => {
+const insertTemplate = (template: Template) => {
   // TODO: テンプレート内容を入力欄に挿入
   console.log('テンプレート選択:', template);
-  hideAutocomplete();
+  hideSuggest();
 }
 
 if (document.readyState === 'loading') {
@@ -116,4 +117,4 @@ if (document.readyState === 'loading') {
   init();
 }
 
-export { handleTemplateSelect };
+export { insertTemplate as handleTemplateSelect };
