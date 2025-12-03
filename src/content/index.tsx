@@ -1,27 +1,43 @@
-import { loadStoredData } from '../utils/storage';
+import type { Template } from "../types";
+import { showAutocomplete, hideAutocomplete } from "./TemplateAutocomplete";
 
 let currentTextArea: HTMLElement | null = null;
 let observer: MutationObserver | null = null;
 
 const init = () => {
   console.log('PromptTemplateを初期化:',window.location.href);
-  
+  if (observer) observer.disconnect();
+  tryFindAndRegister();
+
+  observer = new MutationObserver(() => {
+    // 既に入力欄を取得していて、かつまだDOMに存在している場合
+    if (currentTextArea && document.body.contains(currentTextArea) && isValidInput(currentTextArea)) return;
+    // 既に取得していた入力欄がDOMから削除されていた場合
+    if (currentTextArea && !document.body.contains(currentTextArea)) {
+      console.log('現在の入力欄がDOMから削除されました');
+      cleanUp();
+    }
+    tryFindAndRegister();
+  });
+ 
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+const tryFindAndRegister = () => {
+  const textArea = findTextAreas();
+  if (textArea && textArea !== currentTextArea) {
+    console.log('新しい入力欄を取得しました');
+    registerTextArea(textArea);
+  } 
+}
+
+const registerTextArea = (textarea: HTMLElement) => {
   cleanUp();
 
-  const checkInterval = setInterval(() => {
-    const textAreas = findTextAreas();{
-      if (textAreas) {
-        console.log('入力欄を取得:', textAreas);
-        
-        registerTextArea(textAreas);
-        clearInterval(checkInterval);
-      } else {
-        console.warn('入力欄はまだ未取得');
-      }
-    }
-  }, 500);
+  currentTextArea = textarea;
+  textarea.addEventListener('input', handleInput);
 
-  setTimeout(() => clearInterval(checkInterval), 10000);
+  console.log('入力欄を登録', textarea);
 }
 
 const cleanUp = () => {
@@ -29,29 +45,6 @@ const cleanUp = () => {
     currentTextArea.removeEventListener('input', handleInput);
     currentTextArea = null;
   }
-  if (observer) {
-    observer.disconnect();
-    observer = null;
-  }
-}
-
-const registerTextArea = (textarea: HTMLElement) => {
-  currentTextArea = textarea;
-  textarea.addEventListener('input', handleInput);
-
-  observeTextArea();
-  console.log('入力欄を登録:', textarea);
-}
-
-const observeTextArea = () => {
-  observer = new MutationObserver(()=> {
-    if (currentTextArea && !document.contains(currentTextArea)) {
-      console.log('入力欄がDOMから削除、監視を再開');
-      init();
-    }
-  });
-
-  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 //* 入力欄が有効かチェック */
@@ -86,42 +79,25 @@ const handleInput = async (event: Event) => {
   const target = event.target as HTMLTextAreaElement | HTMLDivElement;
   const text = target.textContent || (target as HTMLTextAreaElement).value || '';
   
-  const match = text.match(/;;(\w*)$/);
+  const match = text.match(/#(\w*)$/);
   if (match) {
     const query = match[1];
-    await showDropdown(query, target as HTMLElement);
+    await showAutocomplete(query, currentTextArea);
   } else {
-    hideDropdown();
+    hideAutocomplete();
   }
 }
 
-/** ドロップダウンを表示 */
-const showDropdown = async (query: string, textarea: HTMLElement) => {
-  const data = await loadStoredData();
-  const templates = data.templates.filter(t => 
-    t.name.toLowerCase().includes(query.toLowerCase())
-  );
-
-  if (templates.length === 0) return;
-  console.log('テンプレート候補:', templates);
-  console.log('ドロップダウンを表示:', textarea);
+const handleTemplateSelect = (template: Template) => {
+  // TODO: テンプレート内容を入力欄に挿入
+  console.log('テンプレート選択:', template);
+  hideAutocomplete();
 }
-
-/** ドロップダウンを非表示 */
-const hideDropdown = () => {
-  // TODO: ドロップダウンを非表示にする処理
-}
-
-/** テンプレート選択時の処理 */
-// const handleTemplateSelect = (template: Template) => {
-//   // TODO: テンプレート内容を入力欄に挿入
-//   console.log('テンプレート選択:', template);
-
-//   hideDropdown()
-// }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
+
+export { handleTemplateSelect };

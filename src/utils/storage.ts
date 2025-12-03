@@ -3,7 +3,7 @@ import type { Template, StorageData } from '../types/index';
 
 const DEFAULT_DATA: StorageData = {
   templates: [],
-  shortcutKey: ';;',
+  shortcutKey: '#',
 };
 
 export const loadStoredData = async (): Promise<StorageData> => {
@@ -34,3 +34,7 @@ export const deleteTemplate = async (id: number): Promise<void> => {
   const templates = data.templates.filter(t => t.id !== id);
   await saveTemplates(templates);
 };
+
+export const deleteAllTemplates = async (): Promise<void> => {
+  await saveTemplates([]);
+}
