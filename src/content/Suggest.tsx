@@ -100,14 +100,13 @@ interface SuggestProps {
 const Suggest: React.FC<SuggestProps> = ({ templates, groups, onSelect, onClose }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 外側クリックで閉じる処理
   useEffect(() => {
+    // サジェスト外のクリック時に閉じる
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         onClose();
       }
     };
-    // mousedownを使用してフォーカスが外れる前に検知
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);

@@ -123,10 +123,12 @@ export const insertTemplate = (template: Template) => {
   });
 
   if (currentTextArea instanceof HTMLTextAreaElement) {
+    // テキストエリアの場合
     currentTextArea.value = newText;
     currentTextArea.dispatchEvent(new Event('input', { bubbles: true }));
   } else {
-    currentTextArea.textContent = newText;
+    // contenteditableの場合
+    currentTextArea.innerText = newText;
     currentTextArea.dispatchEvent(new InputEvent('input', { bubbles: true }));
   }
   currentTextArea.focus();
@@ -134,8 +136,7 @@ export const insertTemplate = (template: Template) => {
 
 const checkFormat = async ( target: HTMLTextAreaElement | HTMLDivElement ): Promise<RegExpMatchArray | null> => {
   const text = target.textContent || (target as HTMLTextAreaElement).value || '';
-  const regex = getRegex();
-  return text.match(regex);
+  return text.match(getRegex());
 }
 
 const getRegex = () => {
