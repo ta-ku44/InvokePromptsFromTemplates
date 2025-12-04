@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import './styles.css';
 import { loadStoredData, } from '../utils/storage';
 import type { Template,Group } from '../types/index';
-import { handleTemplateSelect } from './index.tsx';
+import { insertTemplate } from './index.tsx';
 
 let root : Root | null = null;
 let container : HTMLElement | null = null;
@@ -68,8 +68,7 @@ const viewSuggest =  async (query: string, textArea: HTMLElement | null) => {
       templates={templates}
       groups={data.groups}
       onSelect={(template) => {
-        handleTemplateSelect(template);
-        hideSuggest();
+        insertTemplate(template);
       }}
       onClose={() => { hideSuggest(); }}
     />

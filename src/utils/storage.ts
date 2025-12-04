@@ -80,6 +80,17 @@ export const getTemplatesByGroup = async (groupId: number): Promise<Template[]> 
   return data.templates.filter(t => t.groupId === groupId);
 };
 
+/* ShortcutKey関連のストレージ操作 */
+export const getShortcutKey = async (): Promise<string> => {
+  const data = await loadStoredData();
+  return data.shortcutKey;
+}
+
+export const setShortcutKey = async (key: string): Promise<void> => {
+  const data = await loadStoredData();
+  await browser.storage.sync.set({ data: { ...data, shortcutKey: key } });
+};
+
 export const prompts: Template[] = [
   { id: 1, groupId: 1, name: 'Summary', content: '#以下の文章を３つの要素にまとめて要約してください。 \n\n "textを入力してください"' },
   { id: 2, groupId: 1, name: 'Analyze', content: '#以下の文章を分析してください。 \n\n "textを入力してください"' },

@@ -1,11 +1,18 @@
 import type { Template } from "../types";
 import { viewSuggest, hideSuggest } from "./Suggest";
+import browser from 'webextension-polyfill';
 
 let currentTextArea: HTMLElement | null = null;
 let observer: MutationObserver | null = null;
+let key: string = '#';
 
 const init = async () => {
   console.log('PromptTemplateを初期化:',window.location.href);
+
+  key = await browser.storage.sync.get('data').then(result => {
+    const data = result.data as { shortcutKey?: string } | undefined;
+    return data?.shortcutKey ?? '#';
+  });
 
   if (observer) observer.disconnect();
   tryFindAndRegister();
@@ -18,9 +25,10 @@ const init = async () => {
       console.log('現在の入力欄がDOMから削除された');
       cleanUp();
     }
+    
     tryFindAndRegister();
   });
- 
+
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
@@ -28,18 +36,14 @@ const tryFindAndRegister = () => {
   const textArea = findTextAreas();
   if (textArea && textArea !== currentTextArea) {
     console.log('新しい入力欄を取得した');
-    registerTextArea(textArea);
-  } 
-}
+    cleanUp();
 
-const registerTextArea = (textarea: HTMLElement) => {
-  cleanUp();
+    currentTextArea = textArea;
+    textArea.addEventListener('input', handleInput);
 
-  currentTextArea = textarea;
-  textarea.addEventListener('input', handleInput);
-
-  observeTextArea();
-  console.log('入力欄を登録:', textarea);
+    observeTextArea();
+    console.log('入力欄を登録:', textArea);
+  }
 }
 
 const cleanUp = () => {
@@ -64,16 +68,6 @@ const observeTextArea = () => {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-//* 入力欄が有効かチェック */
-const isValidInput = (element: HTMLElement): boolean => {
-  const style = window.getComputedStyle(element);
-  return style.display !== 'none' && 
-         style.visibility !== 'hidden' && 
-         element.offsetParent !== null &&
-         element.getBoundingClientRect().width > 0 &&
-         element.getBoundingClientRect().height > 0
-};
-
 const findTextAreas = (): HTMLElement | null => {
   const selectors = [
     '[role="textbox"]', // textboxを探索
@@ -91,61 +85,77 @@ const findTextAreas = (): HTMLElement | null => {
   return null;
 };
 
-//** 入力イベントのハンドラ */
-const handleInput = async (event: Event) => {
-  const target = event.target as HTMLTextAreaElement | HTMLDivElement;
-  const text = target.textContent || (target as HTMLTextAreaElement).value || '';
-  
-  const match = text.match(/#(\w*)$/);
-  if (match) {
-    const query = match[1];
-    await viewSuggest(query, currentTextArea);
-  } else {
-    hideSuggest();
+//* 入力欄が有効かチェック */
+const isValidInput = (element: HTMLElement): boolean => {
+  const style = window.getComputedStyle(element);
+  return style.display !== 'none' && 
+         style.visibility !== 'hidden' && 
+         element.offsetParent !== null &&
+         element.getBoundingClientRect().width > 0 &&
+         element.getBoundingClientRect().height > 0
+};
+
+//* 入力欄を監視 */
+const handleInput = async () => {
+  if (!currentTextArea) return;
+  try {
+    const match = await checkFormat(currentTextArea as HTMLTextAreaElement | HTMLDivElement);
+    if (match) {
+      const query = match[1];
+      await viewSuggest(query, currentTextArea);
+    } else {
+      hideSuggest();
+    }
+  } catch (e) {
+    console.error('入力欄のフォーマットチェック中にエラーが発生:', e);
+    return;
   }
 }
 
-const insertTemplate = (template: Template) => {
+//* テンプレートを挿入 */
+export const insertTemplate = (template: Template) => {
   if (!currentTextArea) return;
-
-  const isTextArea = currentTextArea.tagName.toLowerCase() === 'textarea';
   
-  if (isTextArea) {
-    // textarea の場合
-    const textarea = currentTextArea as HTMLTextAreaElement;
-    const text = textarea.value;
-    const newText = text.replace(/#\w*$/, template.content);
-    textarea.value = newText;
-    
-    // カーソルを末尾に移動
-    textarea.selectionStart = textarea.selectionEnd = newText.length;
-    
-    // inputイベントを発火
-    textarea.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  const text = currentTextArea.textContent || (currentTextArea as HTMLTextAreaElement).value || '';
+  const newText = text.replace(getRegex(), (match) => {
+    const leadingSpace = match.startsWith(' ') ? ' ' : '';
+    return leadingSpace + template.content;
+  });
+
+  if (currentTextArea instanceof HTMLTextAreaElement) {
+    currentTextArea.value = newText;
+    currentTextArea.dispatchEvent(new Event('input', { bubbles: true }));
   } else {
-    // contenteditable / role="textbox" の場合
-    const text = currentTextArea.textContent || '';
-    const newText = text.replace(/#\w*$/, template.content);
     currentTextArea.textContent = newText;
-    
-    // カーソルを末尾に移動
-    const range = document.createRange();
-    const selection = window.getSelection();
-    range.selectNodeContents(currentTextArea);
-    range.collapse(false);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-    
-    // inputイベントを発火
     currentTextArea.dispatchEvent(new InputEvent('input', { bubbles: true }));
   }
   currentTextArea.focus();
 }
+
+const checkFormat = async ( target: HTMLTextAreaElement | HTMLDivElement ): Promise<RegExpMatchArray | null> => {
+  const text = target.textContent || (target as HTMLTextAreaElement).value || '';
+  const regex = getRegex();
+  return text.match(regex);
+}
+
+const getRegex = () => {
+  return new RegExp(`(?:^|\\s)${key}([^${key}\\s]*)$`);
+}
+
+//* ショートカットキーの監視 */
+browser.storage.onChanged.addListener(async (changes, area) => {
+  if (area === 'sync' && changes.data) {
+    const newData = changes.data.newValue as { shortcutKey: string } | undefined;
+    const newShortcut = newData?.shortcutKey;
+    if (typeof newShortcut === 'string' && newShortcut !== key) {
+      key = newShortcut;
+      console.log('ショートカットキーが更新されました:', key);
+    }
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
-
-export { insertTemplate as handleTemplateSelect };
