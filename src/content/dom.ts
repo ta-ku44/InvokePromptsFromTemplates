@@ -27,9 +27,7 @@ export class DomObserver {
   private assignTextArea = () => {
     const textArea = this.findTextAreas();
     if (textArea && textArea !== this.curTextArea) {
-      console.log('新しい入力欄を取得した');
       this.curTextArea = textArea;
-
       this.onFound(textArea);
     }
   }

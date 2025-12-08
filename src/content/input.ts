@@ -20,7 +20,7 @@ export class InputHandler {
     const match = await this.checkFormat(this.inputElement);
     if (match) {
       const query = match[1];
-      console.log('トリガー検知:', this.key, 'query:', query);
+      console.log('トリガー検知:', this.key, query);
       this.onQueryChange(query);
     } else {
       this.onQueryChange(null);

@@ -22,19 +22,18 @@ const init = async () => {
 
   const domObserver = new DomObserver({
     onFound: (el: HTMLElement) => {
-      console.log('入力欄を検出し InputHandler を初期化:', el);
-      if (curInputEl === el){
+      console.log('入力欄を検出しInputHandlerを初期化:', el);
+      if (curInputEl !== el){
         curInputEl = el;
-        inputHandler = new InputHandler(el as HTMLTextAreaElement | HTMLDivElement, key,
+        inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key,
           (input) => {
-            input ? showSuggest(input, el, (template) => { inputHandler?.insertTemplate(template); }) : hideSuggest();
+            input ? showSuggest(input, curInputEl, (template) => { inputHandler?.insertTemplate(template); }) : hideSuggest();
           }
         );
-      el.addEventListener('input', inputHandler.handleInput);
+      curInputEl.addEventListener('input', inputHandler.handleInput);
       }
     }
   });
-
   domObserver.start();
 };
 
