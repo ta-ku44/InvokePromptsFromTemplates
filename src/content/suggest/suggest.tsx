@@ -1,29 +1,23 @@
-import React, { /*useEffect,*/ useRef, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { createRoot ,type Root } from 'react-dom/client';
 import useAutocomplete from '@mui/lab/useAutocomplete';
 import './styles.css';
-import { loadStoredData } from '../utils/storage';
-import type { Template, Group } from '../types/index';
-import { insertTemplate } from './index';
+import { loadStoredData } from '../../utils/storage.ts';
+import type { Template, Group } from '../../types/index';
 
 let root: Root | null = null;
 let container: HTMLElement | null = null;
 
 //** サジェストを表示 */
-export const viewSuggest = async (query: string, textArea: HTMLElement | null) => {
+export const showSuggest = async (query: string, textArea: HTMLElement | null, insertedTemplate: (template: Template) => void) => {
   if (!textArea) return;
 
   // プロンプトのテンプレートを取得
   const data = await loadStoredData();
   const templates = data.templates.filter(t =>
-    t.name.toLowerCase().includes(query.toLowerCase()) ||
-    t.content.toLowerCase().includes(query.toLowerCase())
+    t.name.toLowerCase().includes(query.toLowerCase())
   );
-  if (templates.length === 0) {
-    console.log('該当するテンプレートが存在しない');
-    hideSuggest();
-    return;
-  }
+  if (templates.length === 0) return
 
   const rect = textArea.getBoundingClientRect();
   const position = {
@@ -36,7 +30,7 @@ export const viewSuggest = async (query: string, textArea: HTMLElement | null) =
     container = document.createElement('div');
     container.id = 'pt-suggest-root';
     container.style.position = 'absolute';
-    container.style.zIndex = '2147483647';
+    container.style.zIndex = `${Number.MAX_SAFE_INTEGER}`;
     document.body.appendChild(container);
     root = createRoot(container);
   }
@@ -50,7 +44,7 @@ export const viewSuggest = async (query: string, textArea: HTMLElement | null) =
     <Suggest
       templates={templates}
       groups={data.groups}
-      onSelect={insertTemplate}
+      onSelect={insertedTemplate}
       onClose={hideSuggest}
     />
   );
@@ -130,9 +124,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, onSelect, onClose 
         {groupedSections.map((groupOption, groupIdx) => {
           return (
             <div key={groupIdx}>
-              {/* ← ここは UL の外に置く！ */}
               <div className="section-header">{groupOption.title}</div>
-              {/* ← 必ず UL は option のみ */}
               <ul {...listbox}>
                 {groupOption.items.map((item, index) => {
                   const optionProps = getOptionProps({ option: item, index });
