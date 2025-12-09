@@ -4,6 +4,10 @@
   "version": "1.0.0",
   "description": "生成AIにSkills機能を追加",
   "permissions": ["storage"],
+  "background": {
+    "service_worker": "src/background/index.js",
+    "type": "module"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -11,15 +15,11 @@
         "https://gemini.google.com/*",
         "https://claude.ai/*"
       ],
-      "js": ["src/content/index.ts"]
+      "js": ["src/content/index.js"]
     }
   ],
   "options_page": "src/options/index.html",
   "action": {
     "default_popup": "src/popup/index.html"
-  },
-  "background": {
-    "service_worker": "src/background/index.ts",
-    "type": "module"
   }
 }
