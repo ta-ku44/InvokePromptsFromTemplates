@@ -1,0 +1,521 @@
+/* Options Page Styles */
+:root {
+  --bg-primary: #262624;
+  --bg-secondary: #1e1e1c;
+  --bg-tertiary: #3a3a38;
+  --text-primary: #c2c0b6;
+  --text-secondary: #8a8880;
+  --accent-color: #4a9eff;
+  --accent-hover: #3a8eef;
+  --danger-color: #ff6b6b;
+  --danger-hover: #ff5252;
+  --border-color: #3a3a38;
+  --border-radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.options-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.options-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.options-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Add Group Button */
+.add-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-bottom: 24px;
+}
+
+.add-group-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.add-group-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Groups Container */
+.groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Group Item */
+.group-item {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.group-item.dragging {
+  opacity: 0.5;
+}
+
+.group-item.drop-target {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3);
+}
+
+.group-item.drag-overlay {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--accent-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0.95;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 10px;
+  background-color: var(--bg-secondary);
+  cursor: grab;
+  user-select: none;
+}
+
+.group-header:active {
+  cursor: grabbing;
+}
+
+.group-header:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Drag Handle (6 dots for templates) */
+.drag-handle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: grab;
+  padding: 4px 2px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle-dots {
+  display: flex;
+  gap: 2px;
+}
+
+.drag-handle-dot {
+  width: 3px;
+  height: 3px;
+  background-color: var(--text-secondary);
+  border-radius: 50%;
+}
+
+/* Expand Button */
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.expand-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--text-secondary);
+  transition: transform 0.2s;
+}
+
+.expand-btn.expanded svg {
+  transform: rotate(90deg);
+}
+
+/* Group Name */
+.group-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: text;
+}
+
+/* Spacer to push actions to the right */
+.group-header-spacer {
+  flex: 1;
+}
+
+.group-name-input {
+  flex: 1;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+}
+
+/* Group Actions */
+.group-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.icon-btn:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--text-secondary);
+}
+
+.icon-btn.delete:hover {
+  background-color: rgba(255, 107, 107, 0.2);
+}
+
+.icon-btn.delete:hover svg {
+  fill: var(--danger-color);
+}
+
+/* Templates Container */
+.templates-container {
+  padding: 8px 16px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Template Item */
+.template-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: var(--bg-tertiary);
+  border-radius: 6px;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.template-item.dragging {
+  opacity: 0.3;
+}
+
+.template-item:hover {
+  background-color: #454543;
+}
+
+/* Drag Overlay */
+.template-item.drag-overlay {
+  background-color: var(--bg-tertiary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0.95;
+}
+
+/* Template dragging state - blue highlight */
+.template-item.template-dragging {
+  border: 2px solid var(--accent-color);
+  background-color: rgba(74, 158, 255, 0.15);
+}
+
+/* Template wrapper for drop target line */
+.template-wrapper {
+  position: relative;
+}
+
+.template-wrapper.drop-target-line-before::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent-color);
+  box-shadow: 0 0 4px var(--accent-color);
+  border-radius: 2px;
+  z-index: 10;
+}
+
+.template-wrapper.drop-target-line-after::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--accent-color);
+  box-shadow: 0 0 4px var(--accent-color);
+  border-radius: 2px;
+  z-index: 10;
+}
+
+/* Empty group drop target */
+.templates-container.drop-target::before {
+  content: '';
+  display: block;
+  height: 2px;
+  background-color: var(--accent-color);
+  box-shadow: 0 0 4px var(--accent-color);
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+
+/* Name required indicator (red asterisk) */
+.name-required-indicator {
+  color: var(--danger-color);
+  font-weight: bold;
+  margin-right: 4px;
+  font-size: 16px;
+}
+
+.name-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.template-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.template-name-input {
+  flex: 1;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.template-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Add Template Button */
+.add-template-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed var(--border-color);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+
+.add-template-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.add-template-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.modal-field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.modal-field input,
+.modal-field textarea {
+  width: 100%;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-field input:focus,
+.modal-field textarea:focus {
+  border-color: var(--accent-color);
+}
+
+.modal-field textarea {
+  min-height: 150px;
+  resize: vertical;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-btn.cancel {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.modal-btn.cancel:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.modal-btn.save {
+  background-color: var(--accent-color);
+  border: none;
+  color: white;
+}
+
+.modal-btn.save:hover {
+  background-color: var(--accent-hover);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+
+.empty-state p {
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

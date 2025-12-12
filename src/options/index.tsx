@@ -1,6 +1,6 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import Options from './Options';
+import ReactDOM from 'react-dom/client'
+import Options from './Options.tsx';
 
 const root = document.getElementById('root');
 if (root) {

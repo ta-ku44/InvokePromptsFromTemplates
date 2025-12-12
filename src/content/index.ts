@@ -24,21 +24,30 @@ const init = async () => {
     onFound: (el: HTMLElement) => {
       console.log('入力欄を検出しInputHandlerを初期化:', el);
       if (curInputEl !== el){
+        if (curInputEl && inputHandler) {
+          curInputEl.removeEventListener('input', inputHandler.handleInput);
+          hideSuggest();
+        }
         curInputEl = el;
         inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key, (query) => {
           if (query !== null) {
-            showSuggest(query, curInputEl, (template) => {
+            showSuggest({ query, curInputEl, insertText: (template) => {
               inputHandler?.insertTemplate(template);
-            });
+            } });
           } else {
             hideSuggest();
           }
         });
       curInputEl.addEventListener('input', inputHandler.handleInput);
       }
-    }
+    },
   });
   domObserver.start();
+
+  window.addEventListener('beforeunload', () => {
+        domObserver.stop();
+        hideSuggest();
+    });
 };
 
 //* ショートカットキー変更を監視 */

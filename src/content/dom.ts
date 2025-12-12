@@ -16,30 +16,32 @@ export class DomObserver {
       // 既に取得していた入力欄がDOMから削除されていた場合
       if (this.curTextArea && !document.body.contains(this.curTextArea)) {
         console.log('現在の入力欄がDOMから削除された');
-        this.cleanUp();
+        this.curTextArea = null;
       }
+
       this.assignTextArea();
     });
 
     this.observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  private assignTextArea = () => {
+  private assignTextArea = async (): Promise<void> => {
     const textArea = this.findTextAreas();
+    
     if (textArea && textArea !== this.curTextArea) {
       this.curTextArea = textArea;
       this.onFound(textArea);
+    } else if (!textArea) {
+      console.log('有効な入力欄が見つかりませんでした');
     }
   }
 
-  private cleanUp = () => {
-    if (this.curTextArea) {
-      this.curTextArea = null;
-    }
-    if (this.observer) {
+  public stop = () => {
+  if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
     }
+    this.curTextArea = null;
   }
 
   private findTextAreas = (): HTMLElement | null => {
@@ -61,6 +63,8 @@ export class DomObserver {
 
   //* 入力欄が有効かチェック */
   private isValidInput = (element: HTMLElement): boolean => {
+    if (!element || !element.isConnected) return false;
+    
     const style = window.getComputedStyle(element);
     const rect = element.getBoundingClientRect();
     return style.display !== 'none' && 

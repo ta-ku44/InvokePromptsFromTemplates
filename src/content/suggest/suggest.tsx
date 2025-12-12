@@ -1,6 +1,5 @@
-import React, { useRef, useMemo, useEffect } from 'react';
-import { createRoot ,type Root } from 'react-dom/client';
-//import useAutocomplete from '@mui/lab/useAutocomplete';
+import React, { useEffect, useMemo } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import './styles.css';
 import { loadStoredData } from '../../utils/storage.ts';
 import type { Template, Group } from '../../types/index';
@@ -8,40 +7,23 @@ import type { Template, Group } from '../../types/index';
 let root: Root | null = null;
 let container: HTMLElement | null = null;
 
+interface ShowSuggestParams {
+  query: string;
+  curInputEl: HTMLElement | null;
+  insertText: (template: Template) => void;
+}
+
 //** サジェストを表示 */
-export const showSuggest = async (
-  query: string,
-  el: HTMLElement | null,
-  onSelect: (template: Template) => void
-): Promise<void> => {
-  if (!el) return;
+export const showSuggest = async ({ query, curInputEl, insertText }: ShowSuggestParams): Promise<void> => {
+  if (!curInputEl) return;
 
   // プロンプトのテンプレートを取得
   const data = await loadStoredData();
   const templates = data.templates.filter(t =>
     t.name.toLowerCase().includes(query.toLowerCase())
   );
-  if (templates.length === 0) return
+  if (templates.length === 0) return;
 
-  // サジェストの位置を計算
-  const rect = el.getBoundingClientRect();
-  const suggestHeight = Math.min(templates.length * 40 + 50, 300);
-  const viewportHeight = window.innerHeight;
-
-  // 画面下に収まるかチェック
-  const spaceBelow = viewportHeight - rect.bottom;
-  const spaceAbove = rect.top;
-  const showAbove = spaceBelow < suggestHeight && spaceAbove > spaceBelow;
-
-  // 上に表示する場合は入力欄の上端から、下に表示する場合は入力欄の下端から
-  const gap = 12; // 入力欄との間隔
-  const position = {
-    top: showAbove 
-      ? rect.top + window.scrollY - suggestHeight - gap
-      : rect.bottom + window.scrollY + gap,
-    left: rect.left + window.scrollX,
-  };
-  console.log('サジェストの表示位置を計算:', position);
   // 既存のコンテナが存在しなければコンテナを作成
   if (!container) {
     container = document.createElement('div');
@@ -52,19 +34,17 @@ export const showSuggest = async (
     root = createRoot(container);
   }
 
-  container.style.top = `${position.top}px`;
-  container.style.left = `${position.left}px`;
-  container.style.width = `${rect.width}px`;
-  console.log('サジェストコンテナの位置を設定:', container.style.top, container.style.left);
-  console.log('表示するテンプレート数:', templates.length);
   root?.render(
     <Suggest
       templates={templates}
       groups={data.groups}
-      onSelect={onSelect}
+      inputEl={curInputEl}
+      onSelect={insertText}
       onClose={hideSuggest}
     />
   );
+
+  setSuggestPos(curInputEl, templates.length);
   console.log('サジェストを表示しました');
 };
 
@@ -82,70 +62,143 @@ export const hideSuggest = () => {
   console.log('サジェストを非表示にしました');
 };
 
+//** サジェストの位置を設定 */
+const setSuggestPos = (el: HTMLElement, templateCount: number) => {
+  if (!container) return;
+  const rect = el.getBoundingClientRect();
+
+  const suggestHeight = Math.min(200, templateCount * 30); // 最大200px、高さ30pxのアイテムを基準に調整
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  let top: number;
+  if (spaceBelow >= suggestHeight) {
+    top = rect.bottom + window.scrollY; // 入力欄の下に配置
+  } else if (spaceAbove >= suggestHeight) {
+    top = rect.top + window.scrollY - suggestHeight; // 入力欄の上に配置
+  } else if (spaceBelow >= spaceAbove) {
+    top = rect.bottom + window.scrollY; // 下に配置（高さが足りない場合）
+  } else {
+    top = window.scrollY; // 上に配置（高さが足りない場合）
+  }
+
+  container.style.top = `${top}px`;
+  container.style.left = `${rect.left + window.scrollX}px`;
+  container.style.minWidth = `${rect.width}px`;
+};
+
 interface SuggestProps {
   templates: Template[];
   groups: Group[];
+  inputEl: HTMLElement;
   onSelect: (template: Template) => void;
   onClose: () => void;
 }
 
-const Suggest: React.FC<SuggestProps> = ({ templates, groups, onSelect, onClose }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect, onClose }) => {
+  const suggestRef = React.useRef<HTMLDivElement>(null);
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  
+  const groupedData = useMemo(() => {
+    const groupMap = new Map<number | null, Template[]>();
 
+    templates.forEach(template => {
+      const groupId = template.groupId ?? null;
+      if (!groupMap.has(groupId)) {
+        groupMap.set(groupId, []);
+      }
+      groupMap.get(groupId)!.push(template);
+    });
+    return groupMap;
+  }, [templates]);
+
+  const getGroupName = (groupId: number | null): string => {
+    if (groupId === null) return 'another';
+    const group = groups.find(g => g.id === groupId);
+    return group?.name ?? 'another';
+  };
+
+  // 入力欄やサイトのリサイズ・スクロールに合わせて位置を更新
   useEffect(() => {
-    // サジェスト外のクリック時に閉じる
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        onClose();
+    const updatePosition = () => {
+      setSuggestPos(inputEl, templates.length);
+    };
+    const observer = new ResizeObserver(() => {
+        updatePosition();
+      }
+    );
+    if (inputEl) {
+      observer.observe(inputEl);
+    }
+    
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition);
+    };
+  }, [inputEl]);
+
+  // サジェストの操作関連
+  useEffect(() => {
+    const suggestControl = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % templates.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + templates.length) % templates.length);
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        onSelect(templates[selectedIndex]);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    window.addEventListener('keydown', suggestControl);
+    return () => {
+      window.removeEventListener('keydown', suggestControl);
+    };
+  }, [selectedIndex, templates, onSelect]);
+
+  // サジェストの外部クリックやEscapeキーで閉じる
+  useEffect(() => {
+    const closeSuggest = (e: MouseEvent | KeyboardEvent) => {
+      if (suggestRef.current) {
+        if (!suggestRef.current.contains(e.target as Node) || (e instanceof KeyboardEvent && e.key === 'Escape')) {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener('mousedown', closeSuggest);
+    window.addEventListener('keydown', closeSuggest);
+    return () => {
+      window.removeEventListener('mousedown', closeSuggest);
+      window.removeEventListener('keydown', closeSuggest);
+    };
   }, [onClose]);
 
-  const groupedData = useMemo(() => {
-    const grouped = new Map<string, Template[]>();
-    templates.forEach(template => {
-      const group = groups.find(g => g.id === template.groupId);
-      const groupName = group?.name || 'Others';
-      if (!grouped.has(groupName)) {
-        grouped.set(groupName, []);
-      }
-      grouped.get(groupName)?.push(template);
-    });
-    return Array.from(grouped, ([title, items]) => ({ title, items }));
-  }, [templates, groups]);
-
   return (
-    <div className="pt-suggestion-container" ref={containerRef}>
-      <div className='pt-suggestion-scroll-area'>
-        
-        {groupedData.map((section, idx) => (
-          <div key={idx}>
-            {/* セクションヘッダー */}
-            {section.title && (
-              <div className="section-header">{section.title}</div>
+    <div className="pt-suggestion-container" ref={suggestRef}>
+      <div className='pt-suggestion-scroll-area'>    
+        {Array.from(groupedData.entries()).map(([groupId, tmplList]) => (
+          <div key={groupId ?? 'ungrouped'}>
+            {getGroupName(groupId) && (
+              <div className="section-header">{getGroupName(groupId)}</div>
             )}
-            
-            {/* リストアイテム */}
-            {section.items.map((item) => (
+            {tmplList.map((item) => (
               <div 
                 key={item.id} 
                 className="list-item"
                 onClick={() => onSelect(item)}
               >
-                {/* ここではテンプレート名を表示。必要に応じて content のプレビューなども追加可 */}
                 {item.name}
               </div>
             ))}
           </div>
         ))}
-        
-        {groupedData.length === 0 && (
-          <div style={{ padding: '10px', color: '#999', fontSize: '12px' }}>
-            No templates found.
-          </div>
-        )}
       </div>
     </div>
   );

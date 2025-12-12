@@ -16,17 +16,22 @@ export class InputHandler {
     console.log('InputHandlerのkey更新:', newKey);
   }
 
-  public handleInput = async () => {
-    const match = await this.checkFormat(this.inputElement);
-    if (match) {
-      const query = match[1] ?? '';
-      console.log('トリガー検知:', this.key, query);
-      this.onQueryChange(query);
-    } else {
-      this.onQueryChange(null);
+  public handleInput = () => {
+    const match = this.checkFormat(this.inputElement);
+    try {
+      if (match) {
+        const query = match[1] ?? '';
+        console.log('トリガー検知:', this.key, query);
+        this.onQueryChange(query);
+      } else {
+        this.onQueryChange(null);
+      }
+    } catch (e) {
+      console.error('Error in handleInput:', e);
     }
   };
 
+  //** テンプレートを挿入 */
   public insertTemplate = (template: Template) => {
     const el = this.inputElement;
     const regex = this.getRegex();
@@ -38,37 +43,37 @@ export class InputHandler {
       return leadingSpace + template.content;
     });
 
+    // テキストを更新し、キャレットを末尾に移動
     if (el instanceof HTMLTextAreaElement) {
-      // テキストを置換
+      console.log('Textareaにテンプレート挿入:', template.name);
       el.value = newText;
-
-      // カーソルを末尾に移動
       el.selectionStart = el.selectionEnd = newText.length;
-
-      // 入力イベントを発火
       el.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
-      // テキストを置換
+      console.log('ContentEditableにテンプレート挿入:', template.name);
       el.innerText = newText;
-      
-      // カーソルを末尾に移動
       const range = document.createRange();
       const sel = window.getSelection();
+      
+      const textNode = el.childNodes[el.childNodes.length - 1] || el;
+      const offset = textNode.textContent?.length || 0;
 
-      range.selectNodeContents(el);
-      range.collapse(false);
+      try {
+        range.setStart(textNode, offset);
+        range.collapse(true);
 
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-
-      // 入力イベントを発火
-      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      } catch (e) {
+        console.error('カーソル位置の設定に失敗:', e);
+      }
+      el.dispatchEvent(new InputEvent('input', { bubbles: true ,cancelable: true}));
     }
 
     el.focus();
   };
 
-  private checkFormat = async (target: HTMLTextAreaElement | HTMLDivElement) => {
+  private checkFormat = (target: HTMLTextAreaElement | HTMLDivElement) => {
     const text = target instanceof HTMLTextAreaElement
       ? target.value
       : target.innerText;

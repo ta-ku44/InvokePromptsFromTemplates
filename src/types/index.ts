@@ -3,11 +3,13 @@ export interface Template {
   groupId: number;
   name: string;
   content: string;
+  order: number;
 }
 
 export interface Group {
   id: number;
   name: string;
+  order: number;
 }
 
 export interface StorageData {
