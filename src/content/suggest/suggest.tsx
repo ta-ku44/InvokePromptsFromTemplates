@@ -63,28 +63,29 @@ export const hideSuggest = () => {
 };
 
 //** サジェストの位置を設定 */
-const setSuggestPos = (el: HTMLElement, templateCount: number) => {
+const setSuggestPos = (el: HTMLElement, count: number) => {
   if (!container) return;
+  // サジェストの位置を計算
   const rect = el.getBoundingClientRect();
+  const suggestHeight = Math.min(count * 40 + 50, 300);
+  const viewportHeight = window.innerHeight;
 
-  const suggestHeight = Math.min(200, templateCount * 30); // 最大200px、高さ30pxのアイテムを基準に調整
-  const spaceBelow = window.innerHeight - rect.bottom;
+  // 画面下に収まるかチェック
+  const spaceBelow = viewportHeight - rect.bottom;
   const spaceAbove = rect.top;
+  const showAbove = spaceBelow < suggestHeight && spaceAbove > spaceBelow;
 
-  let top: number;
-  if (spaceBelow >= suggestHeight) {
-    top = rect.bottom + window.scrollY; // 入力欄の下に配置
-  } else if (spaceAbove >= suggestHeight) {
-    top = rect.top + window.scrollY - suggestHeight; // 入力欄の上に配置
-  } else if (spaceBelow >= spaceAbove) {
-    top = rect.bottom + window.scrollY; // 下に配置（高さが足りない場合）
-  } else {
-    top = window.scrollY; // 上に配置（高さが足りない場合）
-  }
+  const gap = 14; // 入力欄との間隔
+  const position = {
+    top: showAbove 
+      ? rect.top + window.scrollY - suggestHeight - gap
+      : rect.bottom + window.scrollY + gap,
+    left: rect.left + window.scrollX,
+  };
 
-  container.style.top = `${top}px`;
-  container.style.left = `${rect.left + window.scrollX}px`;
-  container.style.minWidth = `${rect.width}px`;
+  container.style.top = `${position.top}px`;
+  container.style.left = `${position.left}px`;
+  container.style.width = `${rect.width}px`;
 };
 
 interface SuggestProps {

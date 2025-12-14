@@ -90,10 +90,16 @@ body {
   overflow: hidden;
 }
 
+/* ドラッグ中の元の位置は薄く表示 */
 .group-item.dragging {
   opacity: 0.5;
 }
 
+/* DragOverlay用: ドラッグ中のオーバーレイはホバー色 */
+.group-item.dragging-overlay .group-header {
+  background-color: var(--bg-tertiary) !important;
+  cursor: grabbing;
+}
 .group-item.drop-target {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3);
@@ -114,13 +120,18 @@ body {
   background-color: var(--bg-secondary);
   cursor: grab;
   user-select: none;
+  transition: background-color 0.2s;
 }
 
 .group-header:active {
   cursor: grabbing;
 }
 
-.group-header:hover {
+.group-header:not(.template-dragging):hover {
+  background-color: var(--bg-tertiary);
+}
+
+.group-header.header-drop-target {
   background-color: var(--bg-tertiary);
 }
 
@@ -183,10 +194,11 @@ body {
   height: 16px;
   fill: var(--text-secondary);
   transition: transform 0.2s;
+  transform: rotate(-90deg);
 }
 
 .expand-btn.expanded svg {
-  transform: rotate(90deg);
+  transform: rotate(0deg);
 }
 
 /* Group Name */
@@ -498,7 +510,7 @@ body {
 .modal-field label {
   display: inline-flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
   font-size: 13px;
   color: var(--text-secondary);
   margin-bottom: 6px;
@@ -617,4 +629,24 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #8a8a88;
+}
+
+/* Group DnD drop dummy */
+.group-drop-dummy {
+  margin: 8px 0;
+}
+.group-header.dummy {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 10px;
+  background: repeating-linear-gradient(90deg, var(--bg-secondary), var(--bg-secondary) 8px, transparent 8px, transparent 16px);
+  border: 2px dashed var(--accent-color);
+  border-radius: var(--border-radius);
+  color: var(--accent-color);
+  font-weight: 500;
+  opacity: 0.8;
+  min-height: 40px;
+  pointer-events: none;
+  justify-content: flex-start;
 }

@@ -1,453 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  DndContext,
-  DragOverlay,
+import { 
+  DndContext, 
+  DragOverlay, 
   closestCenter,
-  useDraggable,
-  useDroppable,
+  useSensor,
+  useSensors,
+  MouseSensor,
+  TouchSensor,
+  type DragStartEvent,
+  type DragOverEvent,
+  type DragEndEvent 
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { arrayMove } from '@dnd-kit/sortable';
+import Icons from './assets/icons.ts';
 import type { Template, Group } from '../types/index';
-import {
-  loadStoredData,
-  addTemplate,
-  updateTemplate,
-  deleteTemplate,
-  addGroup,
-  updateGroup,
-  deleteGroup,
-  reorderTemplates,
-  moveTemplateToGroup,
-} from '../utils/storage';
-import './Options.css';
+import * as s from '../utils/storage.ts';
+import TemplateModal from './components/EntryEditor.tsx';
+import GroupItem from './components/GroupPanel.tsx';
+import DragHandle from './ui/DragHandle.tsx';
+import './styles.css';
 
-// ============== Icons ==============
-const PlusIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-  </svg>
-);
-
-const DeleteIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-  </svg>
-);
-
-const ChevronIcon = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor">
-    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-  </svg>
-);
-
-// ============== Drag Handle (6 dots) ==============
-interface DragHandleProps {
-  listeners?: React.HTMLAttributes<HTMLElement>;
-  attributes?: React.HTMLAttributes<HTMLElement>;
-}
-
-const DragHandle: React.FC<DragHandleProps> = ({ listeners, attributes }) => (
-  <div className="drag-handle" {...listeners} {...attributes}>
-    <div className="drag-handle-dots">
-      <span className="drag-handle-dot" />
-      <span className="drag-handle-dot" />
-    </div>
-    <div className="drag-handle-dots">
-      <span className="drag-handle-dot" />
-      <span className="drag-handle-dot" />
-    </div>
-    <div className="drag-handle-dots">
-      <span className="drag-handle-dot" />
-      <span className="drag-handle-dot" />
-    </div>
-  </div>
-);
-
-// ============== Template Modal ==============
-interface TemplateModalProps {
-  template: Template | null;
-  groupId: number | null;
-  onSave: (template: Partial<Template> & { groupId: number }) => void;
-  onClose: () => void;
-}
-
-const TemplateModal: React.FC<TemplateModalProps> = ({
-  template,
-  groupId,
-  onSave,
-  onClose,
-}) => {
-  const [name, setName] = useState(template?.name || '');
-  const [content, setContent] = useState(template?.content || '');
-  const [showError, setShowError] = useState(false);
-
-  const isNameEmpty = !name.trim();
-
-  const handleSave = () => {
-    if (isNameEmpty) {
-      setShowError(true);
-      return;
-    }
-    onSave({
-      id: template?.id,
-      groupId: template?.groupId ?? groupId!,
-      name: name.trim(),
-      content: content,
-    });
-  };
-
-  return (
-    <div 
-      className="modal-overlay" 
-      onMouseDown={(e) => {
-        // オーバーレイ自体がクリックされた場合のみ閉じる
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <h2>{template ? 'テンプレートを編集' : '新しいテンプレート'}</h2>
-        <div className={`modal-field ${showError && isNameEmpty ? 'error' : ''}`}>
-          <label>
-            テンプレート名
-            <span className="required-mark">*必須</span>
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (showError) setShowError(false);
-            }}
-            placeholder="テンプレート名を入力"
-          />
-          {showError && isNameEmpty && (
-            <span className="error-message">テンプレート名は必須です</span>
-          )}
-        </div>
-        <div className="modal-field">
-          <label>内容</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="プロンプトの内容を入力"
-          />
-        </div>
-        <div className="modal-actions">
-          <button className="modal-btn cancel" onClick={onClose}>
-            キャンセル
-          </button>
-          <button 
-            className={`modal-btn save ${isNameEmpty ? 'disabled' : ''}`}
-            onClick={handleSave}
-            disabled={isNameEmpty}
-          >
-            保存
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============== Template Item ==============
-interface TemplateItemProps {
-  template: Template;
-  onEdit: (template: Template) => void;
-  onDelete: (id: number) => void;
-  onNameChange: (id: number, name: string) => void;
-  isDragging?: boolean;
-  isDropTarget?: boolean;
-  dropPosition?: 'before' | 'after';
-}
-
-const TemplateItem: React.FC<TemplateItemProps> = ({
-  template,
-  onEdit,
-  onDelete,
-  onNameChange,
-  isDragging = false,
-  isDropTarget = false,
-  dropPosition = 'before',
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(template.name);
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDragRef,
-  } = useDraggable({
-    id: `template-${template.id}`,
-    data: { template },
-  });
-
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: `template-${template.id}`,
-    data: { template },
-  });
-
-  const setNodeRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      setDragRef(node);
-      setDropRef(node);
-    },
-    [setDragRef, setDropRef]
-  );
-
-  const handleDoubleClick = () => {
-    setIsEditing(true);
-    setEditName(template.name);
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    if (editName !== template.name) {
-      onNameChange(template.id, editName.trim());
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur();
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-      setEditName(template.name);
-    }
-  };
-
-  const isNameEmpty = !template.name.trim();
-  
-  const dropClass = isDropTarget
-    ? dropPosition === 'before'
-      ? 'drop-target-line-before'
-      : 'drop-target-line-after'
-    : '';
-
-  return (
-    <div 
-      ref={setNodeRef}
-      className={`template-wrapper ${dropClass} ${isDragging ? 'is-dragging' : ''}`}
-    >
-      <div className={`template-item ${isDragging ? 'dragging' : ''}`}>
-        <DragHandle listeners={listeners} attributes={attributes} />
-        {isEditing ? (
-          <input
-            type="text"
-            className="template-name-input"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            autoFocus
-          />
-        ) : (
-          <span className="template-name" onDoubleClick={handleDoubleClick}>
-            {isNameEmpty ? (
-              <>
-                <span className="name-required-indicator">*</span>
-                <span className="name-empty">(名前なし)</span>
-              </>
-            ) : (
-              template.name
-            )}
-          </span>
-        )}
-        <div className="template-actions">
-          <button className="icon-btn" onClick={() => onEdit(template)} title="編集">
-            <EditIcon />
-          </button>
-          <button
-            className="icon-btn delete"
-            onClick={() => onDelete(template.id)}
-            title="削除"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============== Group Item ==============
-interface GroupItemProps {
-  group: Group;
-  templates: Template[];
-  isExpanded: boolean;
-  onToggle: () => void;
-  onEdit: (template: Template) => void;
-  onDeleteTemplate: (id: number) => void;
-  onTemplateNameChange: (id: number, name: string) => void;
-  onGroupNameChange: (id: number, name: string) => void;
-  onDeleteGroup: (id: number) => void;
-  onAddTemplate: (groupId: number) => void;
-  startEditing?: boolean;
-  onEditingComplete?: () => void;
-  // Drag state
-  activeTemplateId?: number | null;
-  overTemplateId?: number | null;
-  dropPosition?: 'before' | 'after';
-  isHeaderDropTarget?: boolean;
-  isAddBtnDropTarget?: boolean;
-  isCrossGroupDrag?: boolean;
-}
-
-const GroupItem: React.FC<GroupItemProps> = ({
-  group,
-  templates,
-  isExpanded,
-  onToggle,
-  onEdit,
-  onDeleteTemplate,
-  onTemplateNameChange,
-  onGroupNameChange,
-  onDeleteGroup,
-  onAddTemplate,
-  startEditing = false,
-  onEditingComplete,
-  activeTemplateId = null,
-  overTemplateId = null,
-  dropPosition = 'before',
-  isHeaderDropTarget = false,
-  isAddBtnDropTarget = false,
-  isCrossGroupDrag = false,
-}) => {
-  const [isEditing, setIsEditing] = useState(startEditing);
-  const [editName, setEditName] = useState(group.name);
-
-  const { setNodeRef: setHeaderDropRef } = useDroppable({
-    id: `group-header-${group.id}`,
-    data: { type: 'group-header', groupId: group.id },
-  });
-
-  const { setNodeRef: setAddBtnDropRef } = useDroppable({
-    id: `group-add-btn-${group.id}`,
-    data: { type: 'group-add-btn', groupId: group.id },
-  });
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(true);
-    setEditName(group.name);
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    // 空の場合は元の名前に戻す
-    if (!editName.trim()) {
-      setEditName(group.name);
-    } else if (editName.trim() !== group.name) {
-      onGroupNameChange(group.id, editName.trim());
-    }
-    onEditingComplete?.();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur();
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-      setEditName(group.name);
-      onEditingComplete?.();
-    }
-  };
-
-  const sortedTemplates = [...templates].sort((a, b) => a.order - b.order);
-
-  return (
-    <div className="group-item">
-      <div 
-        ref={setHeaderDropRef}
-        className={`group-header ${isHeaderDropTarget ? 'header-drop-target' : ''}`} 
-        onClick={() => !isEditing && onToggle()}
-      >
-        <button className={`expand-btn ${isExpanded ? 'expanded' : ''}`}>
-          <ChevronIcon />
-        </button>
-        {isEditing ? (
-          <input
-            type="text"
-            className="group-name-input"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            onClick={(e) => e.stopPropagation()}
-            autoFocus
-          />
-        ) : (
-          <span className="group-name">
-            <span
-              className="group-name-text"
-              onDoubleClick={handleDoubleClick}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {group.name}
-            </span>
-          </span>
-        )}
-        <div className="group-header-spacer" />
-        <div className="group-actions">
-          <button
-            className="icon-btn delete"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteGroup(group.id);
-            }}
-            title="グループを削除"
-          >
-            <DeleteIcon />
-          </button>
-        </div>
-      </div>
-      {isExpanded && (
-        <div 
-          className={`templates-container ${isCrossGroupDrag ? 'group-drop-target' : ''}`}
-        >
-          {isHeaderDropTarget && (
-            <div className="drop-line-top" />
-          )}
-          {sortedTemplates.map((template) => (
-            <TemplateItem
-              key={template.id}
-              template={template}
-              onEdit={onEdit}
-              onDelete={onDeleteTemplate}
-              onNameChange={onTemplateNameChange}
-              isDragging={activeTemplateId === template.id}
-              isDropTarget={overTemplateId === template.id}
-              dropPosition={dropPosition}
-            />
-          ))}
-          <div className="add-template-wrapper">
-            {isAddBtnDropTarget && (
-              <div className="drop-line-bottom" />
-            )}
-            <button 
-              ref={setAddBtnDropRef}
-              className="add-template-btn"
-              onClick={() => onAddTemplate(group.id)}
-            >
-              <PlusIcon />
-              テンプレートを追加
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ============== Main Options Component ==============
 const Options: React.FC = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -457,15 +30,35 @@ const Options: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
 
-  // Drag state
+  // Template Drag state
   const [activeTemplateId, setActiveTemplateId] = useState<number | null>(null);
   const [overTemplateId, setOverTemplateId] = useState<number | null>(null);
   const [overHeaderGroupId, setOverHeaderGroupId] = useState<number | null>(null);
   const [overAddBtnGroupId, setOverAddBtnGroupId] = useState<number | null>(null);
   const [dropPosition, setDropPosition] = useState<'before' | 'after'>('before');
+  
+  // Group Drag state
+  const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
+  const [overGroupId, setOverGroupId] = useState<number | null>(null);
+  const [groupDropPosition, setGroupDropPosition] = useState<'before' | 'after'>('before');
+
+  // ▼ センサー設定: 10px以上動かした場合のみドラッグとみなす (クリックとドラッグの分離)
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10, 
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
 
   const loadData = useCallback(async () => {
-    const data = await loadStoredData();
+    const data = await s.loadStoredData();
     setGroups([...data.groups].sort((a, b) => a.order - b.order));
     setTemplates(data.templates);
     setExpandedGroups(new Set(data.groups.map((g) => g.id)));
@@ -475,31 +68,59 @@ const Options: React.FC = () => {
     loadData();
   }, [loadData]);
 
+
   // ========== Drag Handlers ==========
-  const handleDragStart = (event: import('@dnd-kit/core').DragStartEvent) => {
+  const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const idStr = String(active.id);
     if (idStr.startsWith('template-')) {
       const templateId = parseInt(idStr.replace('template-', ''), 10);
       setActiveTemplateId(templateId);
+      setActiveGroupId(null);
+    }
+    if (idStr.startsWith('group-')) {
+      const groupId = parseInt(idStr.replace('group-', ''), 10);
+      setActiveGroupId(groupId);
+      setActiveTemplateId(null);
+      // グループをドラッグ開始したら、一時的に閉じる（Overlay表示のため）
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
     }
   };
 
-  const handleDragOver = (event: import('@dnd-kit/core').DragOverEvent) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const { over, active, delta } = event;
-    
     if (!over) {
       setOverTemplateId(null);
       setOverHeaderGroupId(null);
       setOverAddBtnGroupId(null);
+      setOverGroupId(null);
+      return;
+    }
+    const overIdStr = String(over.id);
+
+    // グループをドラッグしている場合
+    if (String(active.id).startsWith('group-')) {
+      if (overIdStr.startsWith('group-')) {
+        const groupId = parseInt(overIdStr.replace('group-', ''), 10);
+        setOverGroupId(groupId);
+        setOverTemplateId(null);
+        setOverHeaderGroupId(null);
+        setOverAddBtnGroupId(null);
+        // ドラッグ方向で位置を決定
+        setGroupDropPosition(delta.y > 0 ? 'after' : 'before');
+      } else {
+        setOverGroupId(null);
+      }
       return;
     }
 
-    const overIdStr = String(over.id);
-
+    // テンプレートをドラッグしている場合
     if (overIdStr.startsWith('template-')) {
       const templateId = parseInt(overIdStr.replace('template-', ''), 10);
-      // 自分自身の上なら無視
       if (overIdStr === String(active.id)) {
         setOverTemplateId(null);
         return;
@@ -507,7 +128,6 @@ const Options: React.FC = () => {
       setOverTemplateId(templateId);
       setOverHeaderGroupId(null);
       setOverAddBtnGroupId(null);
-      // ドラッグ方向で位置を決定
       setDropPosition(delta.y > 0 ? 'after' : 'before');
     } else if (overIdStr.startsWith('group-header-')) {
       const groupId = parseInt(overIdStr.replace('group-header-', ''), 10);
@@ -520,14 +140,66 @@ const Options: React.FC = () => {
       setOverHeaderGroupId(null);
       setOverTemplateId(null);
     } else {
-      // 空白エリアなど
       setOverTemplateId(null);
       setOverHeaderGroupId(null);
       setOverAddBtnGroupId(null);
     }
   };
 
-  const handleDragEnd = async (event: import('@dnd-kit/core').DragEndEvent) => {
+  // ========== Group Drag Handlers ==========
+  const handleGroupDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveGroupId(null);
+    setOverGroupId(null);
+    setGroupDropPosition('before');
+    
+    // ドラッグ開始時に閉じたグループを、ドロップ後にもう一度展開する (UXのため)
+    const activeId = parseInt(String(active.id).replace('group-', ''), 10);
+    setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add(activeId);
+        return next;
+    });
+
+    if (!over) return;
+    const activeIdStr = String(active.id);
+    const overIdStr = String(over.id);
+    if (!activeIdStr.startsWith('group-') || !overIdStr.startsWith('group-')) return;
+    
+    const activeGroupId = parseInt(activeIdStr.replace('group-', ''), 10);
+    const overGroupId = parseInt(overIdStr.replace('group-', ''), 10);
+    if (activeGroupId === overGroupId) return;
+
+    // 並び替えロジック
+    const oldIndex = groups.findIndex(g => g.id === activeGroupId);
+    let newIndex = groups.findIndex(g => g.id === overGroupId);
+    
+    // dropPositionが'after'の場合、ターゲットの次の位置に挿入
+    if (groupDropPosition === 'after') {
+      newIndex++;
+    }
+
+    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
+    
+    // newIndexはspliceで移動する位置を示すため、oldIndex > newIndex の場合はnewIndexをそのまま使用
+    // oldIndex < newIndex の場合は、要素が先に一つ抜けるため newIndex - 1 の位置に挿入
+    const insertIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
+    
+    // 新しい順序の生成
+    const newOrder = [...groups];
+    const [moved] = newOrder.splice(oldIndex, 1);
+    newOrder.splice(insertIndex, 0, moved);
+
+    // 1. ローカルstate即時更新
+    setGroups(newOrder.map((g, i) => ({ ...g, order: i })));
+    
+    // 2. 永続化
+    await s.reorderGroups(newOrder.map(g => g.id));
+    await loadData();
+  };
+
+  // ========== Template Drag Handlers ==========
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveTemplateId(null);
@@ -545,6 +217,8 @@ const Options: React.FC = () => {
     const activeTemplateId = parseInt(activeIdStr.replace('template-', ''), 10);
     const activeTemplate = templates.find((t) => t.id === activeTemplateId);
     if (!activeTemplate) return;
+
+    // ... (テンプレート移動ロジックは既存のまま) ...
 
     if (overIdStr.startsWith('template-')) {
       const overTemplateId = parseInt(overIdStr.replace('template-', ''), 10);
@@ -571,14 +245,21 @@ const Options: React.FC = () => {
 
         if (oldIndex !== newIndex) {
           const newOrder = arrayMove(groupTemplates, oldIndex, newIndex);
-          await reorderTemplates(
+          setTemplates((prev) => {
+            const others = prev.filter((t) => t.groupId !== sourceGroupId);
+            return [
+              ...others,
+              ...newOrder.map((t, i) => ({ ...t, order: i })),
+            ];
+          });
+          await s.reorderTemplates(
             sourceGroupId,
             newOrder.map((t) => t.id)
           );
           await loadData();
         }
       } else {
-        // グループ間移動
+        // グループ間移動 (テンプレート間ドロップ)
         const targetGroupTemplates = templates
           .filter((t) => t.groupId === targetGroupId)
           .sort((a, b) => a.order - b.order);
@@ -588,14 +269,36 @@ const Options: React.FC = () => {
           targetIndex = targetIndex + 1;
         }
 
-        await moveTemplateToGroup(activeTemplateId, targetGroupId, targetIndex);
+        setTemplates((prev) => {
+          const moved = { ...activeTemplate, groupId: targetGroupId, order: targetIndex };
+          const filtered = prev.filter((t) => t.id !== activeTemplateId);
+          const targetGroupTemplates = [
+            ...filtered.filter((t) => t.groupId === targetGroupId),
+          ];
+          targetGroupTemplates.splice(targetIndex, 0, moved);
+          const updatedTarget = targetGroupTemplates.map((t, i) => ({ ...t, order: i }));
+          const others = filtered.filter((t) => t.groupId !== targetGroupId);
+          return [...others, ...updatedTarget];
+        });
+        await s.moveTemplateToGroup(activeTemplateId, targetGroupId, targetIndex);
         await loadData();
       }
     } else if (overIdStr.startsWith('group-header-')) {
       // グループヘッダーにドロップ → 一番上に追加
       const targetGroupId = parseInt(overIdStr.replace('group-header-', ''), 10);
       if (activeTemplate.groupId !== targetGroupId) {
-        await moveTemplateToGroup(activeTemplateId, targetGroupId, 0);
+        setTemplates((prev) => {
+          const moved = { ...activeTemplate, groupId: targetGroupId, order: 0 };
+          const filtered = prev.filter((t) => t.id !== activeTemplateId);
+          const targetGroupTemplates = [
+            moved,
+            ...filtered.filter((t) => t.groupId === targetGroupId),
+          ];
+          const updatedTarget = targetGroupTemplates.map((t, i) => ({ ...t, order: i }));
+          const others = filtered.filter((t) => t.groupId !== targetGroupId);
+          return [...others, ...updatedTarget];
+        });
+        await s.moveTemplateToGroup(activeTemplateId, targetGroupId, 0);
         await loadData();
       } else {
         // 同じグループ内で一番上に移動
@@ -605,7 +308,14 @@ const Options: React.FC = () => {
         const oldIndex = groupTemplates.findIndex((t) => t.id === activeTemplateId);
         if (oldIndex > 0) {
           const newOrder = arrayMove(groupTemplates, oldIndex, 0);
-          await reorderTemplates(targetGroupId, newOrder.map((t) => t.id));
+          setTemplates((prev) => {
+            const others = prev.filter((t) => t.groupId !== targetGroupId);
+            return [
+              ...others,
+              ...newOrder.map((t, i) => ({ ...t, order: i })),
+            ];
+          });
+          await s.reorderTemplates(targetGroupId, newOrder.map((t) => t.id));
           await loadData();
         }
       }
@@ -616,7 +326,18 @@ const Options: React.FC = () => {
         (t) => t.groupId === targetGroupId
       );
       if (activeTemplate.groupId !== targetGroupId) {
-        await moveTemplateToGroup(
+        setTemplates((prev) => {
+          const moved = { ...activeTemplate, groupId: targetGroupId, order: targetGroupTemplates.length };
+          const filtered = prev.filter((t) => t.id !== activeTemplateId);
+          const targetGroupTemplatesNew = [
+            ...filtered.filter((t) => t.groupId === targetGroupId),
+          ];
+          targetGroupTemplatesNew.push(moved);
+          const updatedTarget = targetGroupTemplatesNew.map((t, i) => ({ ...t, order: i }));
+          const others = filtered.filter((t) => t.groupId !== targetGroupId);
+          return [...others, ...updatedTarget];
+        });
+        await s.moveTemplateToGroup(
           activeTemplateId,
           targetGroupId,
           targetGroupTemplates.length
@@ -628,12 +349,18 @@ const Options: React.FC = () => {
         const oldIndex = groupTemplates.findIndex((t) => t.id === activeTemplateId);
         if (oldIndex < groupTemplates.length - 1) {
           const newOrder = arrayMove(groupTemplates, oldIndex, groupTemplates.length - 1);
-          await reorderTemplates(targetGroupId, newOrder.map((t) => t.id));
+          setTemplates((prev) => {
+            const others = prev.filter((t) => t.groupId !== targetGroupId);
+            return [
+              ...others,
+              ...newOrder.map((t, i) => ({ ...t, order: i })),
+            ];
+          });
+          await s.reorderTemplates(targetGroupId, newOrder.map((t) => t.id));
           await loadData();
         }
       }
     }
-    // 空白エリアの場合は何もしない（元の場所に戻る）
   };
 
   const handleDragCancel = () => {
@@ -641,32 +368,34 @@ const Options: React.FC = () => {
     setOverTemplateId(null);
     setOverHeaderGroupId(null);
     setOverAddBtnGroupId(null);
+    setActiveGroupId(null);
+    setOverGroupId(null);
   };
 
+  // DragOverlay表示用データ
   const activeTemplate = activeTemplateId
     ? templates.find((t) => t.id === activeTemplateId)
     : null;
+  
+  const activeGroup = activeGroupId
+    ? groups.find((g) => g.id === activeGroupId)
+    : null;
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // ========== Group Handlers ==========
   const handleAddGroup = async () => {
-    const newGroupId = await addGroup({ name: '新しいグループ' });
+    const newGroupId = await s.addGroup({ name: '新しいグループ' });
     await loadData();
     setEditingGroupId(newGroupId);
   };
 
   const handleDeleteGroup = async (id: number) => {
     if (confirm('このグループとすべてのテンプレートを削除しますか？')) {
-      await deleteGroup(id);
+      await s.deleteGroup(id);
       await loadData();
     }
   };
 
   const handleGroupNameChange = async (id: number, name: string) => {
-    await updateGroup(id, { name });
+    await s.updateGroup(id, { name });
     await loadData();
   };
 
@@ -697,13 +426,13 @@ const Options: React.FC = () => {
 
   const handleDeleteTemplate = async (id: number) => {
     if (confirm('このテンプレートを削除しますか？')) {
-      await deleteTemplate(id);
+      await s.deleteTemplate(id);
       await loadData();
     }
   };
 
   const handleTemplateNameChange = async (id: number, name: string) => {
-    await updateTemplate(id, { name });
+    await s.updateTemplate(id, { name });
     await loadData();
   };
 
@@ -711,12 +440,12 @@ const Options: React.FC = () => {
     templateData: Partial<Template> & { groupId: number }
   ) => {
     if (templateData.id) {
-      await updateTemplate(templateData.id, {
+      await s.updateTemplate(templateData.id, {
         name: templateData.name,
         content: templateData.content,
       });
     } else {
-      await addTemplate({
+      await s.addTemplate({
         groupId: templateData.groupId,
         name: templateData.name || '',
         content: templateData.content || '',
@@ -740,11 +469,19 @@ const Options: React.FC = () => {
 
   return (
     <DndContext
+      sensors={sensors} // センサーを適用
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
+      onDragEnd={(e) => {
+      const activeIdStr = String(e.active.id);
+      if (activeIdStr.startsWith('group-')) {
+        handleGroupDragEnd(e);
+      } else if (activeIdStr.startsWith('template-')) {
+        handleDragEnd(e);
+      }
+      }}
       onDragCancel={handleDragCancel}
     >
       <div className="options-container">
@@ -753,7 +490,7 @@ const Options: React.FC = () => {
         </header>
 
         <button className="add-group-btn" onClick={handleAddGroup}>
-          <PlusIcon />
+          <Icons.Add />
           グループを追加
         </button>
 
@@ -766,11 +503,10 @@ const Options: React.FC = () => {
           <div className="groups-container">
             {groups.map((group) => {
               const groupTemplates = getTemplatesForGroup(group.id);
-              // グループ内のどれかのテンプレートがドロップターゲットか
+              // テンプレートDnD用
               const groupOverTemplateId = groupTemplates.find(
                 (t) => t.id === overTemplateId
               )?.id ?? null;
-              // アクティブテンプレートが別グループからドラッグされているか
               const draggedTemplate = activeTemplateId
                 ? templates.find((t) => t.id === activeTemplateId)
                 : undefined;
@@ -780,6 +516,10 @@ const Options: React.FC = () => {
                 draggedTemplate !== undefined &&
                 draggedTemplate.groupId !== group.id &&
                 (groupOverTemplateId !== null || isHeaderDropTarget || isAddBtnDropTarget);
+
+              // グループDnD用
+              const isGroupDragging = activeGroupId === group.id;
+              const isGroupDropTarget = overGroupId === group.id;
 
               return (
                 <GroupItem
@@ -802,6 +542,11 @@ const Options: React.FC = () => {
                   isHeaderDropTarget={isHeaderDropTarget}
                   isAddBtnDropTarget={isAddBtnDropTarget}
                   isCrossGroupDrag={isCrossGroupDrag}
+                  // グループDnD用
+                  groupDraggableId={`group-${group.id}`}
+                  isGroupDragging={isGroupDragging}
+                  isGroupDropTarget={isGroupDropTarget}
+                  groupDropPosition={groupDropPosition}
                 />
               );
             })}
@@ -817,19 +562,33 @@ const Options: React.FC = () => {
           />
         )}
 
+        {/* --- Drag Overlay --- */}
         <DragOverlay dropAnimation={null}>
+          {/* テンプレートのドラッグ表示 */}
           {activeTemplate ? (
             <div className="template-item drag-overlay">
               <DragHandle />
               <span className="template-name">{activeTemplate.name}</span>
               <div className="template-actions">
                 <button className="icon-btn" title="編集">
-                  <EditIcon />
+                  <Icons.Edit />
                 </button>
                 <button className="icon-btn delete" title="削除">
-                  <DeleteIcon />
+                  <Icons.Delete />
                 </button>
               </div>
+            </div>
+          ) : null}
+
+          {/* グループのドラッグ表示 (ヘッダーのみ) */}
+          {activeGroup ? (
+            <div className="group-item dragging-overlay">
+               <div className="group-header">
+                  <button className="expand-btn">
+                    <Icons.ExpandMore />
+                  </button>
+                  <span className="group-name">{activeGroup.name}</span>
+               </div>
             </div>
           ) : null}
         </DragOverlay>
