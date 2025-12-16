@@ -19,6 +19,7 @@ import * as s from '../utils/storage.ts';
 import TemplateModal from './components/EntryEditor.tsx';
 import GroupItem from './components/GroupPanel.tsx';
 import DragHandle from './ui/DragHandle.tsx';
+import DropGap from './ui/DropGap.tsx';
 import './styles.css';
 
 const Options: React.FC = () => {
@@ -33,17 +34,16 @@ const Options: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
 
-  // グループのドラッグ状態
-  const [activeGroupId, setActiveGroupId] = useState<number | null>(null); // ドラッグ中のグループ
-  const [overGroupId, setOverGroupId] = useState<number | null>(null); // ホバー中のグループ
-  const [groupDropPosition, setGroupDropPosition] = useState<'before' | 'after'>('before'); // ドロップ位置
-
   // テンプレートのドラッグ状態
-  const [activeTemplateId, setActiveTemplateId] = useState<number | null>(null); // ドラッグ中のテンプレート
-  const [activeGapId, setActiveGapId] = useState<string | null>(null);
+  const [activeTemplateId, setActiveTemplateId] = useState<number | null>(null);
+  const [activeTemplateGapId, setActiveTemplateGapId] = useState<string | null>(null);
+
+  // グループのドラッグ状態
+  const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
+  const [activeGroupGapId, setActiveGroupGapId] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 10 } }), // 10px以上動かした場合のみドラッグ開始
+    useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
@@ -51,6 +51,7 @@ const Options: React.FC = () => {
     const data = await s.loadStoredData();
     setGroups([...data.groups].sort((a, b) => a.order - b.order));
     setTemplates(data.templates);
+    // 初期ロード時は全て展開
     setExpandedGroups(new Set(data.groups.map((g) => g.id)));
   }, []);
 
@@ -63,14 +64,12 @@ const Options: React.FC = () => {
     const { active } = event;
     const idStr = String(active.id);
     
-    // テンプレートのドラッグ開始
     if (idStr.startsWith('template-')) {
       const templateId = parseInt(idStr.replace('template-', ''), 10);
       setActiveTemplateId(templateId);
       setActiveGroupId(null);
     }
     
-    // グループのドラッグ開始
     if (idStr.startsWith('group-')) {
       const groupId = parseInt(idStr.replace('group-', ''), 10);
       setActiveGroupId(groupId);
@@ -89,8 +88,7 @@ const Options: React.FC = () => {
     const { active, over, delta } = event;
 
     if (!over) {
-      setActiveGapId(null);
-      setOverGroupId(null);
+      setActiveTemplateGapId(null);
       return;
     }
 
@@ -100,13 +98,14 @@ const Options: React.FC = () => {
 
     //* グループをドラッグ中の場合
     if (String(active.id).startsWith('group-')) {
-      if (overId.startsWith('group-')) {
-        setOverGroupId(Number(overId.replace('group-', '')));
-        // ドラッグ方向でドロップ位置を決定
-        setGroupDropPosition(position);
-      } else {
-        setOverGroupId(null);
+      // group-gap への直接ホバー
+      if (overId.startsWith('group-gap-')) {
+        setActiveGroupGapId(overId);
+        return;
       }
+      
+      // グループ要素にホバーした場合の処理（ここでは無視またはフォールバック）
+      setActiveGroupGapId(null); 
       return;
     }
 
@@ -114,37 +113,48 @@ const Options: React.FC = () => {
     
     // gapに直接ホバーした場合
     if (overId.startsWith('gap-')) {
-      setActiveGapId(overId);
+      setActiveTemplateGapId(overId);
       return;
     }
 
     // gap以外の要素からgapを推測
     let targetGapId: string | null = null;
 
-    const tid = Number(overId.replace('template-', ''));
-    if (overId !== String(active.id)) {
-      const overTemplate = templates.find(t => t.id === tid);
-      if (overTemplate) {
-        const groupTemplates = templates
-          .filter(t => t.groupId === overTemplate.groupId)
-          .sort((a, b) => a.order - b.order);
-        const index = groupTemplates.findIndex(t => t.id === tid);
-        // ドラッグ方向でgapのインデックスを決定
-        const gapIndex = position === 'after' ? index + 1 : index;
-        targetGapId = `gap-${overTemplate.groupId}-${gapIndex}`;
+    if (overId.startsWith('template-')) {
+      const tid = Number(overId.replace('template-', ''));
+      if (overId !== String(active.id)) {
+        const overTemplate = templates.find(t => t.id === tid);
+        if (overTemplate) {
+          const groupTemplates = templates
+            .filter(t => t.groupId === overTemplate.groupId)
+            .sort((a, b) => a.order - b.order);
+          const index = groupTemplates.findIndex(t => t.id === tid);
+          // ドラッグ方向でgapのインデックスを決定
+          const gapIndex = position === 'after' ? index + 1 : index;
+          targetGapId = `gap-${overTemplate.groupId}-${gapIndex}`;
+        }
       }
     }
     
-    setActiveGapId(targetGapId);
+    setActiveTemplateGapId(targetGapId);
+  };
+
+  //* ドラッグ終了処理 (グループとテンプレートの振り分け)
+  const handleDragEndMain = (event: DragEndEvent) => {
+    const activeIdStr = String(event.active.id);
+
+    if (activeIdStr.startsWith('group-')) {
+      handleGroupDragEnd(event);
+    } else if (activeIdStr.startsWith('template-')) {
+      handleTemplateDragEnd(event);
+    }
   };
 
   //* グループのドラッグ終了処理
   const handleGroupDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveGroupId(null);
-    setOverGroupId(null);
-    setGroupDropPosition('before');
-    setActiveGapId(null);
+    setActiveGroupGapId(null);
     
     // ドラッグ後にグループを再展開
     const activeId = parseInt(String(active.id).replace('group-', ''), 10);
@@ -155,57 +165,53 @@ const Options: React.FC = () => {
     });
 
     if (!over) return;
+    
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
-    if (!activeIdStr.startsWith('group-') || !overIdStr.startsWith('group-')) return;
-    
+
+    if (!activeIdStr.startsWith('group-') || !overIdStr.startsWith('group-gap-')) return;
+
+    // gap-IDからターゲットインデックスを抽出
+    const targetIndex = parseInt(overIdStr.replace('group-gap-', ''), 10);
+    if (isNaN(targetIndex)) return;
+
     const activeGroupId = parseInt(activeIdStr.replace('group-', ''), 10);
-    const overGroupId = parseInt(overIdStr.replace('group-', ''), 10);
-    if (activeGroupId === overGroupId) return;
-
+    
     const oldIndex = groups.findIndex(g => g.id === activeGroupId);
-    let newIndex = groups.findIndex(g => g.id === overGroupId);
-    
-    // dropPositionが'after'の場合は次の位置に挿入
-    if (groupDropPosition === 'after') {
-      newIndex++;
-    }
+    let newIndex = targetIndex; 
 
-    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
+    if (oldIndex < 0 || oldIndex === newIndex) return;
     
-    // 要素削除による位置ずれを考慮した挿入位置の計算
+    // arrayMoveの挙動に合わせて、挿入位置の調整
     const insertIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
     
-    const newOrder = [...groups];
-    const [moved] = newOrder.splice(oldIndex, 1);
-    newOrder.splice(insertIndex, 0, moved);
+    const newOrder = arrayMove(groups, oldIndex, insertIndex);
 
     setGroups(newOrder.map((g, i) => ({ ...g, order: i })));
     
     await s.reorderGroups(newOrder.map(g => g.id));
-    await loadData();
+    await loadData(); // 永続化後のデータ再ロード
   };
 
   //* テンプレートのドラッグ終了処理
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleTemplateDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveTemplateId(null);
-    setActiveGapId(null);
+    setActiveTemplateGapId(null);
 
     if (!over) return;
 
     const activeIdStr = String(active.id);
     if (!activeIdStr.startsWith('template-')) return;
-    const finalGapId = activeGapId;
+    
+    // 最終的なドロップターゲットは activeGapId に保持されているはず
+    const finalGapId = activeTemplateGapId;
 
     if (!finalGapId || !finalGapId.startsWith('gap-')) return;
 
     const activeTemplateId = parseInt(activeIdStr.replace('template-', ''), 10);
     const activeTemplate = templates.find((t) => t.id === activeTemplateId);
-    if (!activeTemplate) return;
-
-    // gapへのドロップのみ処理
     if (!activeTemplate) return;
 
     // gap IDからグループIDとインデックスを抽出
@@ -220,30 +226,43 @@ const Options: React.FC = () => {
     const isCrossGroup = activeTemplate.groupId !== targetGroupId;
 
     if (isCrossGroup) {
-      // グループ間での移動
       setTemplates((prev) => {
-        const moved = { ...activeTemplate, groupId: targetGroupId, order: targetIndex };
-        const filtered = prev.filter((t) => t.id !== activeTemplateId);
-        const targetGroupTemplates = filtered.filter((t) => t.groupId === targetGroupId);
-        
+        const moved = {
+          ...activeTemplate,
+          groupId: targetGroupId,
+          order: targetIndex,
+        };
+
+        const filtered = prev.filter(t => t.id !== activeTemplateId);
+
+        const targetGroupTemplates = filtered
+          .filter(t => t.groupId === targetGroupId)
+          .sort((a, b) => a.order - b.order);
+
         targetGroupTemplates.splice(targetIndex, 0, moved);
-        const updatedTarget = targetGroupTemplates.map((t, i) => ({ ...t, order: i }));
-        
-        const others = filtered.filter((t) => t.groupId !== targetGroupId);
+
+        const updatedTarget = targetGroupTemplates.map((t, i) => ({
+          ...t,
+          order: i,
+        }));
+
+        const others = filtered.filter(t => t.groupId !== targetGroupId);
+
         return [...others, ...updatedTarget];
       });
-
+      // グループ間での移動 (永続化を伴う)
       await s.moveTemplateToGroup(activeTemplateId, targetGroupId, targetIndex);
       await loadData();
     } else {
-      // 同じグループ内での移動
+      // 同じグループ内での移動 (ソートロジック)
       const groupTemplates = templates
         .filter((t) => t.groupId === targetGroupId)
         .sort((a, b) => a.order - b.order);
 
       const oldIndex = groupTemplates.findIndex((t) => t.id === activeTemplateId);
+      
+      // arrayMoveの挙動に合わせて挿入位置を調整
       let newIndex = targetIndex;
-
       if (oldIndex < targetIndex) {
         newIndex = targetIndex - 1;
       }
@@ -252,13 +271,14 @@ const Options: React.FC = () => {
         const newOrder = arrayMove(groupTemplates, oldIndex, newIndex);
         
         setTemplates((prev) => {
-          const others = prev.filter((t) => t.groupId !== targetGroupId);
+          const others = prev.filter(t => t.groupId !== targetGroupId);
           return [
             ...others,
             ...newOrder.map((t, i) => ({ ...t, order: i })),
           ];
         });
         
+        // 永続化
         await s.reorderTemplates(
           targetGroupId,
           newOrder.map((t) => t.id)
@@ -266,14 +286,13 @@ const Options: React.FC = () => {
         await loadData();
       }
     }
-    console.groupEnd();
   };
 
   const handleDragCancel = () => {
     setActiveTemplateId(null);
-    setActiveGapId(null);
+    setActiveTemplateGapId(null);
     setActiveGroupId(null);
-    setOverGroupId(null);
+    setActiveGroupGapId(null);
   };
 
   const activeTemplate = activeTemplateId
@@ -369,69 +388,85 @@ const Options: React.FC = () => {
     templates.filter((t) => t.groupId === groupId);
 
   return (
-    // ドラッグ&ドロップのコンテキスト
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
-      onDragEnd={(e) => {
-        const activeIdStr = String(e.active.id);
-        if (activeIdStr.startsWith('group-')) {
-          handleGroupDragEnd(e);
-        } else if (activeIdStr.startsWith('template-')) {
-          handleDragEnd(e);
-        }
-      }}
+      onDragEnd={handleDragEndMain}
       onDragCancel={handleDragCancel}
     >
       <div className="options-container">
+        {/* ================= Header ================= */}
         <header className="options-header">
           <h1>PromptTemplate</h1>
         </header>
 
-        <button className="add-group-btn" onClick={handleAddGroup}>
-          <Icons.Add />
-          グループを追加
-        </button>
-
-        {/* グループが存在しない場合の空状態表示 */}
-        {groups.length === 0 ? (
-          <div className="empty-state">
-            <p>まだグループがありません</p>
-            <p>「グループを追加」ボタンをクリックして開始しましょう</p>
+        {/* ========== Group Area (Main UI) ========== */}
+        {/* 点線で囲むためのコンテナ */}
+        <div className="group-area-container">
+          
+          {/* グループ追加ボタン */}
+          <div className="group-actions-header">
+            <button className="add-group-btn" onClick={handleAddGroup}>
+              <Icons.PlaylistAdd />
+              グループを追加
+            </button>
           </div>
-        ) : (
-          // グループ一覧
-          <div className="groups-container">
-            {groups.map((group) => (
-              <GroupItem
-                key={group.id}
-                group={group}
-                templates={getTemplatesForGroup(group.id)}
-                isExpanded={expandedGroups.has(group.id)}
-                onToggle={() => handleToggleGroup(group.id)}
-                onEdit={handleEditTemplate}
-                onDeleteTemplate={handleDeleteTemplate}
-                onTemplateNameChange={handleTemplateNameChange}
-                onGroupNameChange={handleGroupNameChange}
-                onDeleteGroup={handleDeleteGroup}
-                onAddTemplate={handleAddTemplate}
-                startEditing={editingGroupId === group.id}
-                onEditingComplete={() => setEditingGroupId(null)}
-                activeTemplateId={activeTemplateId}
-                activeGapId={activeGapId}
-                groupDraggableId={`group-${group.id}`}
-                isGroupDragging={activeGroupId === group.id}
-                isGroupDropTarget={overGroupId === group.id}
-                groupDropPosition={groupDropPosition}
+
+          {/* ===== Empty State ===== */}
+          {groups.length === 0 ? (
+            <div className="empty-state">
+              <p>まだグループがありません</p>
+              <p>「追加」ボタンをクリックして開始しましょう</p>
+            </div>
+          ) : (
+            /* ===== Groups ===== */
+            <div className="groups-container">
+              {groups.map((group, idx) => (
+                <React.Fragment key={group.id}>
+                  {/* グループ間のドロップギャップ */}
+                  <DropGap
+                    type="group"
+                    indexOrId={idx}
+                    isActive={activeGroupGapId === `group-gap-${idx}`}
+                    isDraggingGroup={activeGroupId !== null}
+                  />
+                  
+                  {/* グループパネル本体 */}
+                  <GroupItem
+                    group={group}
+                    templates={getTemplatesForGroup(group.id)}
+                    isExpanded={expandedGroups.has(group.id)}
+                    onToggle={() => handleToggleGroup(group.id)}
+                    onEdit={handleEditTemplate}
+                    onDeleteTemplate={handleDeleteTemplate}
+                    onTemplateNameChange={handleTemplateNameChange}
+                    onGroupNameChange={handleGroupNameChange}
+                    onDeleteGroup={handleDeleteGroup}
+                    onAddTemplate={handleAddTemplate}
+                    startEditing={editingGroupId === group.id}
+                    onEditingComplete={() => setEditingGroupId(null)}
+                    activeTemplateId={activeTemplateId}
+                    activeGapId={activeTemplateGapId}
+                    groupDraggableId={`group-${group.id}`}
+                    isGroupDragging={activeGroupId === group.id}
+                  />
+                </React.Fragment>
+              ))}
+              {/* 最後の gap */}
+              <DropGap
+                type="group"
+                indexOrId={groups.length}
+                isActive={activeGroupGapId === `group-gap-${groups.length}`}
+                isDraggingGroup={activeGroupId !== null}
               />
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        {/* テンプレート編集モーダル */}
+        {/* ========== Template Modal ========== */}
         {isModalOpen && (
           <TemplateModal
             template={editingTemplate}
@@ -441,26 +476,24 @@ const Options: React.FC = () => {
           />
         )}
 
-        {/* ドラッグ中のオーバーレイ表示 */}
+        {/* ========== Drag Overlay ========== */}
         <DragOverlay dropAnimation={{ duration: 180, easing: 'ease-out' }}>
-          {/* テンプレートのドラッグ表示 */}
-          {activeTemplate ? (
+          {activeTemplate && (
             <div className="template-item drag-overlay">
               <DragHandle />
               <span className="template-name">{activeTemplate.name}</span>
               <div className="template-actions">
-                <button className="icon-btn" title="編集">
+                <button className="icon-btn">
                   <Icons.Edit />
                 </button>
-                <button className="icon-btn delete" title="削除">
+                <button className="icon-btn delete">
                   <Icons.Delete />
                 </button>
               </div>
             </div>
-          ) : null}
+          )}
 
-          {/* グループのドラッグ表示 */}
-          {activeGroup ? (
+          {activeGroup && (
             <div className="group-item dragging-overlay">
               <div className="group-header">
                 <button className="expand-btn">
@@ -469,7 +502,7 @@ const Options: React.FC = () => {
                 <span className="group-name">{activeGroup.name}</span>
               </div>
             </div>
-          ) : null}
+          )}
         </DragOverlay>
       </div>
     </DndContext>

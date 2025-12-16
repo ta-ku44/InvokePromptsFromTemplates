@@ -20,22 +20,22 @@ const DropGap: React.FC<DropGapProps> = ({
     ? `gap-${groupId}-${indexOrId}`
     : `group-gap-${indexOrId}`;
 
+  const isDisabled = type === 'group' && !isDraggingGroup;
+
   const { setNodeRef } = useDroppable({
     id,
-    data: { 
+    data: {
       type: `${type}-gap`, 
       groupId: type === 'template' ? groupId : undefined, 
       indexOrId 
     },
+    disabled: isDisabled,
   });
-
-  const height = (type === 'group' && isDraggingGroup) ? { height:'60px' } : undefined;
 
   return (
     <div 
       ref={setNodeRef} 
       className={`drop-gap drop-gap-${type} ${isActive ? 'active' : ''}`}
-      style={{ ...height }}
     />
   );
 };

@@ -1,627 +1,652 @@
-/* Options Page Styles */
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&display=swap');
+
 :root {
-  --bg-primary: #262624;
-  --bg-secondary: #1e1e1c;
-  --bg-tertiary: #3a3a38;
-  --text-primary: #c2c0b6;
-  --text-secondary: #8a8880;
-  --accent-color: #4a9eff;
-  --accent-hover: #3a8eef;
-  --danger-color: #ff6b6b;
-  --danger-hover: #ff5252;
-  --border-color: #3a3a38;
-  --border-radius: 8px;
+    --bg-primary: #262624;
+    --bg-secondary: #1e1e1c;
+    --bg-tertiary: #3a3a38;
+    --text-primary: #c2c0b6;
+    --text-secondary: #8a8880;
+    --accent-color: #4a9eff;
+    --accent-hover: #3a8eef;
+    --danger-color: #ff6b6b;
+    --danger-hover: #ff5252;
+    --border-color: #3a3a38;
+    --border-radius: 8px;
 }
 
+/* スタイル */
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-  min-height: 100vh;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
 }
 
 #root {
-  min-height: 100vh;
+    min-height: 100vh;
 }
 
+/* メインコンテナとヘッダー */
 .options-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 32px 24px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px 24px;
 }
 
 .options-header {
-  margin-bottom: 32px;
-  text-align: center;
+    margin-bottom: 32px;
+    text-align: center;
 }
 
 .options-header h1 {
-  font-size: 40px;
-  font-weight: 600;
-  color: var(--text-primary);
+    font-family: 'Shippori Mincho B1', serif;
+    font-size: 40px;
+    font-weight: 600;
 }
 
-/* Add Group Button */
+/* グループ追加ボタン (既存のスタイルを調整) */
 .add-group-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    /* margin-bottom は親要素で制御するため削除 */
 }
 
 .add-group-btn:hover {
-  background-color: var(--accent-hover);
+    background-color: var(--accent-hover);
 }
 
 .add-group-btn svg {
-  width: 18px;
-  height: 18px;
+    width: 18px;
+    height: 18px;
 }
 
-/* Groups Container */
+/* グループコンテナ */
 .groups-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
 }
 
-/* Group Item */
+/* グループ項目 */
 .group-item {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  overflow: hidden;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    margin: 6px 0;
 }
 
-/* ドラッグ中の元の位置は薄く表示 */
+/* ドラッグ中の元の要素を視覚的に非表示 */
 .group-item.dragging {
-  opacity: 0.5;
+    opacity: 0;
+    pointer-events: none;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
 }
 
-/* DragOverlay用: ドラッグ中のオーバーレイはホバー色 */
+/* DragOverlay用: ドラッグ中のグループ表示 */
 .group-item.dragging-overlay .group-header {
-  background-color: var(--bg-tertiary) !important;
-  cursor: grabbing;
+    background-color: var(--bg-tertiary) !important;
+    cursor: grabbing;
 }
+
 .group-item.drop-target {
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3);
 }
 
 .group-item.drag-overlay {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--accent-color);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  opacity: 0.95;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--accent-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    opacity: 0.95;
 }
 
 .group-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  gap: 10px;
-  background-color: var(--bg-secondary);
-  cursor: grab;
-  user-select: none;
-  transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 10px;
+    background-color: var(--bg-secondary);
+    cursor: grab;
+    user-select: none;
+    transition: background-color 0.2s;
 }
 
 .group-header:active {
-  cursor: grabbing;
+    cursor: grabbing;
 }
 
 .group-header:not(.template-dragging):hover {
-  background-color: var(--bg-tertiary);
+    background-color: var(--bg-tertiary);
 }
 
 .group-header.header-drop-target {
-  background-color: var(--bg-tertiary);
+    background-color: var(--bg-tertiary);
 }
 
-/* Drag Handle (6 dots for templates) */
+/* ドラッグハンドル (6つの点) */
 .drag-handle {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  cursor: grab;
-  padding: 4px 2px;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-  flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: grab;
+    padding: 4px 2px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
 }
 
 .drag-handle:hover {
-  opacity: 1;
+    opacity: 1;
 }
 
 .drag-handle:active {
-  cursor: grabbing;
-  opacity: 1;
+    cursor: grabbing;
+    opacity: 1;
 }
 
 .drag-handle-dots {
-  display: flex;
-  gap: 2px;
+    display: flex;
+    gap: 2px;
 }
 
 .drag-handle-dot {
-  width: 3px;
-  height: 3px;
-  background-color: var(--text-secondary);
-  border-radius: 50%;
-  transition: background-color 0.2s;
+    width: 3px;
+    height: 3px;
+    background-color: var(--text-secondary);
+    border-radius: 50%;
+    transition: background-color 0.2s;
 }
 
-/* Expand Button */
+/* 展開ボタン */
 .expand-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
 }
 
 .expand-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: var(--text-secondary);
-  transition: transform 0.2s;
-  transform: rotate(-90deg);
+    width: 16px;
+    height: 16px;
+    fill: var(--text-secondary);
+    transition: transform 0.2s;
+    transform: rotate(-90deg);
 }
 
 .expand-btn.expanded svg {
-  transform: rotate(0deg);
+    transform: rotate(0deg);
 }
 
-/* Group Name */
+/* グループ名 */
 .group-name {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
 }
 
 .group-name-text {
-  cursor: text;
+    cursor: text;
 }
 
-/* Spacer - not needed when group-name has flex: 1 */
-.group-header-spacer {
-  display: none;
-}
-
+/* グループ名の入力欄 */
 .group-name-input {
-  flex: 1;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--accent-color);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-  outline: none;
+    flex: 1;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    outline: none;
 }
 
-/* Group Actions */
+/* グループアクション */
 .group-actions {
-  display: flex;
-  gap: 8px;
+    display: flex;
+    gap: 8px;
 }
 
 .icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
 }
 
 .icon-btn:hover {
-  background-color: var(--bg-tertiary);
+    background-color: var(--bg-tertiary);
 }
 
 .icon-btn svg {
-  width: 18px;
-  height: 18px;
-  fill: var(--text-secondary);
+    width: 18px;
+    height: 18px;
+    fill: var(--text-secondary);
 }
 
 .icon-btn.delete:hover {
-  background-color: rgba(255, 107, 107, 0.2);
+    background-color: rgba(255, 107, 107, 0.2);
 }
 
 .icon-btn.delete:hover svg {
-  fill: var(--danger-color);
+    fill: var(--danger-color);
 }
 
-/* Templates Container */
+/* テンプレートコンテナ */
 .templates-container {
-  padding: 8px 16px 16px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  position: relative;
+    padding: 8px 16px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
 }
 
-/* Template Item */
+/* テンプレート項目 */
 .template-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background-color: var(--bg-tertiary);
-  border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: 6px;
 }
 
 .template-item.dragging {
-  opacity: 0.3;
+    opacity: 0.3;
 }
 
 .template-item:hover {
-  background-color: #454543;
+    background-color: #454543;
 }
 
-/* Drag Overlay */
+/* テンプレートのDrag Overlay */
 .template-item.drag-overlay {
-  background-color: var(--bg-tertiary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background-color: var(--bg-tertiary);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .template-item.drag-overlay .drag-handle {
-  opacity: 1;
+    opacity: 1;
 }
 
 .template-item.drag-overlay .drag-handle-dot {
-  background-color: var(--accent-color);
+    background-color: var(--accent-color);
 }
 
 .drag-handle:hover .drag-handle-dot {
-  background-color: var(--accent-color);
+    background-color: var(--accent-color);
 }
 
-/* active で青くするのは drag-overlay のみ */
+/* drag-overlay時のドラッグハンドル色 */
 .template-item.drag-overlay .drag-handle:active .drag-handle-dot {
-  background-color: var(--accent-color);
+    background-color: var(--accent-color);
 }
 
 .template-item.dragging .drag-handle-dot {
-  background-color: var(--text-secondary);
+    background-color: var(--text-secondary);
 }
 
-/* Template dragging state - blue highlight */
+/* テンプレートのドラッグ中ハイライト */
 .template-item.template-dragging {
-  border: 2px solid var(--accent-color);
-  background-color: rgba(74, 158, 255, 0.15);
+    border: 2px solid var(--accent-color);
+    background-color: rgba(74, 158, 255, 0.15);
 }
 
-/* Add template button wrapper */
+/* テンプレート追加ボタンのラッパー */
 .add-template-wrapper {
-  position: relative;
+    position: relative;
 }
 
-/* Drag overlay - follows cursor */
+/* ドラッグオーバーレイ（カーソル追従） */
 .template-item.drag-overlay {
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--accent-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  cursor: grabbing;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--accent-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    cursor: grabbing;
 }
 
 .template-item.drag-overlay .drag-handle .dot {
-  background-color: var(--accent-color);
+    background-color: var(--accent-color);
 }
 
-/* Name required indicator (red asterisk) */
+/* 必須項目インジケーター（赤いアスタリスク） */
 .name-required-indicator {
-  color: var(--danger-color);
-  font-weight: bold;
-  margin-right: 4px;
-  font-size: 16px;
+    color: var(--danger-color);
+    font-weight: bold;
+    margin-right: 4px;
+    font-size: 16px;
 }
 
 .name-empty {
-  color: var(--text-secondary);
-  font-style: italic;
+    color: var(--text-secondary);
+    font-style: italic;
 }
 
 .template-name {
-  flex: 1;
-  font-size: 14px;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .template-name-input {
-  flex: 1;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--accent-color);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 14px;
-  color: var(--text-primary);
-  outline: none;
+    flex: 1;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
 }
 
 .template-actions {
-  display: flex;
-  gap: 4px;
+    display: flex;
+    gap: 4px;
 }
 
-/* Add Template Button */
+/* テンプレート追加ボタン */
 .add-template-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 1px dashed var(--border-color);
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-secondary);
-  transition: all 0.2s;
-  width: 100%;
-  justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px dashed var(--border-color);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    width: 100%;
+    justify-content: center;
 }
 
 .add-template-btn:hover {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
 }
 
 .add-template-btn svg {
-  width: 14px;
-  height: 14px;
+    width: 14px;
+    height: 14px;
 }
 
-/* Modal Overlay */
+/* モーダルオーバーレイ */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
 .modal {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .modal h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
 }
 
 .modal-field {
-  margin-bottom: 16px;
+    margin-bottom: 16px;
 }
 
 .modal-field label {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 4px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
 }
 
 .modal-field .required-mark {
-  color: var(--danger-color);
-  font-size: 10px;
-  position: relative;
-  top: -0.25px;
+    color: var(--danger-color);
+    font-size: 10px;
+    position: relative;
+    top: -0.25px;
 }
 
 .modal-field.error input {
-  border-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 .modal-field .error-message {
-  display: block;
-  color: var(--danger-color);
-  font-size: 12px;
-  margin-top: 4px;
+    display: block;
+    color: var(--danger-color);
+    font-size: 12px;
+    margin-top: 4px;
 }
 
 .modal-field input,
 .modal-field textarea {
-  width: 100%;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--text-primary);
-  outline: none;
-  transition: border-color 0.2s;
+    width: 100%;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
 }
 
 .modal-field input:focus,
 .modal-field textarea:focus {
-  border-color: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 .modal-field textarea {
-  min-height: 150px;
-  resize: vertical;
-  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    min-height: 150px;
+    resize: vertical;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
 }
 
 .modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
 }
 
 .modal-btn {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .modal-btn.cancel {
-  background: none;
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
 .modal-btn.cancel:hover {
-  background-color: var(--bg-tertiary);
+    background-color: var(--bg-tertiary);
 }
 
 .modal-btn.save {
-  background-color: var(--accent-color);
-  border: none;
-  color: white;
+    background-color: var(--accent-color);
+    border: none;
+    color: white;
 }
 
 .modal-btn.save:hover {
-  background-color: var(--accent-hover);
+    background-color: var(--accent-hover);
 }
 
 .modal-btn.save.disabled,
 .modal-btn.save:disabled {
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
-  cursor: not-allowed;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
 }
 
-/* Empty State */
+/* 空の状態（Empty State） */
 .empty-state {
-  text-align: center;
-  padding: 48px 24px;
-  color: var(--text-secondary);
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-secondary);
 }
 
 .empty-state p {
-  font-size: 15px;
-  margin-bottom: 16px;
+    font-size: 15px;
+    margin-bottom: 16px;
 }
 
-/* Scrollbar */
+/* スクロールバー */
 ::-webkit-scrollbar {
-  width: 8px;
+    width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+    background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #6a6a68;
-  border-radius: 4px;
+    background: #6a6a68;
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8a8a88;
+    background: #8a8a88;
 }
 
-/* Group DnD drop dummy */
-.group-drop-dummy {
-  margin: 8px 0;
-}
-.group-header.dummy {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  gap: 10px;
-  background: repeating-linear-gradient(90deg, var(--bg-secondary), var(--bg-secondary) 8px, transparent 8px, transparent 16px);
-  border: 2px dashed var(--accent-color);
-  border-radius: var(--border-radius);
-  color: var(--accent-color);
-  font-weight: 500;
-  opacity: 0.8;
-  min-height: 40px;
-  pointer-events: none;
-  justify-content: flex-start;
-}
+/* ドラッグ＆ドロップ関連要素 */
 
 .drop-gap {
-  transition: all 0.2s;
+    transition: all 0.2s;
 }
 
+/* テンプレート間のドロップギャップ */
 .drop-gap-template {
-  height: 10px; /* ヒット判定領域の広さ */
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  transition: none;
+    height: 10px; /* ヒット判定領域の広さ */
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    transition: none;
 }
 
 .drop-gap-template.active::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: 2px; /* 線の太さ（細い線） */
-  background-color: var(--accent-color);
-  box-shadow: 0 0 4px var(--accent-color); /* 青い発光効果 */
-  border-radius: 2px;
+    content: '';
+    display: block;
+    width: 100%;
+    height: 2px; /* 線の太さ（細い線） */
+    background-color: var(--accent-color);
+    box-shadow: 0 0 4px var(--accent-color); /* 青い発光効果 */
+    border-radius: 2px;
 }
 
-/* グループ用Gap: 点線の枠（灰色） */
+/* グループ間のドロップギャップ */
 .drop-gap-group {
-  height: 60px; /* 常に固定（座標ずれ防止） */
-  opacity: 0; /* 非アクティブ時は透明 */
-  transition: opacity 0.15s ease-out;
+    height: 0;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        height 0.15s ease-out,
+        margin 0.15s ease-out,
+        opacity 0.15s ease-out;
 }
 
+/* アクティブ時のみ表示 */
 .drop-gap-group.active {
-  opacity: 1;
-  border: 2px dashed #6a6a68; /* 灰色の点線 */
-  border-radius: var(--border-radius);
-  background-color: rgba(106, 106, 104, 0.08); /* 灰色の半透明背景 */
-  margin: 8px 0;
+    height: 60px;
+    margin: 8px 0;
+    opacity: 1;
+    pointer-events: auto;
+    border: 2px dashed #6a6a68;
+    border-radius: var(--border-radius);
+    background-color: rgba(106, 106, 104, 0.08);
 }
 
-/* ドラッグ中のグループを視覚的に非表示（完全に消す） */
+/* ドラッグ中のグループを視覚的に非表示（完全に削除） */
 .group-item.dragging {
-  opacity: 0;
-  pointer-events: none;
-  /* display: none は使わない（DragOverlayに影響するため） */
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* グループエリア全体を囲むコンテナ */
+.group-area-container {
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 16px 16px 16px;
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 空状態の時は点線を非表示 */
+.group-area-container:has(.empty-state) {
+    border: none;
+    padding: 0;
+}
+
+/* グループ追加ボタンを囲むヘッダー */
+.group-actions-header {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 12px; /* グループリストとの間隔 */
+}
+
+/* 不要な要素の非表示 */
+.group-header-spacer {
+    display: none;
 }
