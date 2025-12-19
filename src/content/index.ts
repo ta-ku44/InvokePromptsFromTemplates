@@ -1,5 +1,5 @@
-import { DomObserver } from './dom';
-import { InputHandler } from './input';
+import { DomObserver } from './dom.ts';
+import { InputHandler } from './input.ts';
 import { showSuggest, hideSuggest } from './suggest/suggest.tsx';
 import browser from 'webextension-polyfill';
 

@@ -27,11 +27,11 @@ export class InputHandler {
         this.onQueryChange(null);
       }
     } catch (e) {
-      console.error('Error in handleInput:', e);
+      console.error('handleInputでエラーを検出:', e);
     }
   };
 
-  //** テンプレートを挿入 */
+  //* テンプレートを挿入
   public insertTemplate = (template: Template) => {
     const el = this.inputElement;
     const regex = this.getRegex();

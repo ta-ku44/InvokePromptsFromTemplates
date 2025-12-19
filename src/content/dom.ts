@@ -1,5 +1,5 @@
 export class DomObserver {
-  private curTextArea: HTMLElement | null = null; 
+  private curTextArea: HTMLElement | null = null;
   private observer: MutationObserver | null = null;
   private onFound: (el: HTMLElement) => void;
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import './styles.css';
+import './styles.scss';
 import { loadStoredData } from '../../utils/storage.ts';
 import type { Template, /*Group,*/ StorageData } from '../../types/index';
 

@@ -20,7 +20,7 @@ import TemplateModal from './components/EntryEditor.tsx';
 import GroupItem from './components/GroupPanel.tsx';
 import DragHandle from './ui/DragHandle.tsx';
 import DropGap from './ui/DropGap.tsx';
-import './styles.css';
+import './styles.scss';
 
 const Options: React.FC = () => {
   // データ管理
@@ -459,7 +459,7 @@ const Options: React.FC = () => {
       <div className="options-container">
         {/* ヘッダー */}
         <header className="options-header">
-          <h1>PromptTemplate</h1>
+          <h1>Invoke Prompts from Templates</h1>
         </header>
 
         {/* グループエリア */}

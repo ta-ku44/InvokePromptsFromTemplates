@@ -1,73 +1,32 @@
-# React + TypeScript + Vite
+# Invoke Prompts from Templates
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ユーザーがよく使うプロンプトをテンプレートとして保存・管理し、素早く呼び出して使用できる拡張機能。
 
-Currently, two official plugins are available:
+## 特徴
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **テンプレート保存**: よく使うプロンプトをテンプレートとして保存可能。
+- **カテゴリ管理**: テンプレートをカテゴリごとに整理。
+- **ショートカット呼び出し**: 入力欄でショートカットキーを使ってテンプレートを素早く呼び出し。
 
-## React Compiler
+## 使い方
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. テンプレートの呼び出し
+1. 生成AIの入力欄でショートカットキーを入力（デフォルト: `#`）
+2. サジェストに表示された一覧から使いたいテンプレートを選択
+3. プロンプトが挿入されるので、必要に応じて編集
+4. 送信
 
-## Expanding the ESLint configuration
+### 2. テンプレートの作成
+1. 拡張機能のオプションページを開く
+2. カテゴリの中から「新規テンプレート作成」を選択
+3. プロンプト内容を記述
+4. 変数が必要な場合は `{入力記法}` の形式で記述
+5. 保存
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 3. テンプレートの管理
+- オプションページからテンプレート一覧を表示
+- 編集・削除・カテゴリ変更が可能
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## インストール
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+chromeウェブストアのリンクを追加する
