@@ -28,12 +28,12 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
     setNodeRef: setDragRef,
   } = useDraggable({
     id: `template-${template.id}`,
-    data: { template },
+    data: { type: 'template', template },
   });
 
   const { setNodeRef: setDropRef } = useDroppable({
     id: `template-${template.id}`,
-    data: { template },
+    data: { type: 'template', template },
   });
 
   const setNodeRef = useCallback(
@@ -68,12 +68,16 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
   const isNameEmpty = !template.name.trim();
 
   return (
-    <div ref={setNodeRef} className={`template-item ${isDragging ? 'dragging' : ''}`}>
+    <div 
+      ref={setNodeRef} 
+      className={`template ${isDragging ? 'template--dragging' : ''}`}
+    >
       <DragHandle listeners={listeners} attributes={attributes} />
+      
       {isEditing ? (
         <input
           type="text"
-          className="template-name-input"
+          className="template__name-input"
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
           onBlur={handleBlur}
@@ -81,24 +85,29 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
           autoFocus
         />
       ) : (
-        <span className="template-name" onDoubleClick={handleDoubleClick}>
+        <div className="template__name" onDoubleClick={handleDoubleClick}>
           {isNameEmpty ? (
             <>
-              <span className="name-required-indicator">*</span>
-              <span className="name-empty">(名前なし)</span>
+              <span className="template__name-required">*</span>
+              <span className="template__name-empty">(名前なし)</span>
             </>
           ) : (
             template.name
           )}
-        </span>
+        </div>
       )}
-      <div className="template-actions">
-        <button className="icon-btn" onClick={() => onEdit(template)} title="編集">
+
+      <div className="template__actions">
+        <button 
+          className="button--icon" 
+          onClick={() => onEdit(template)} 
+          title="編集"
+        >
           <Icons.Edit />
         </button>
-        <button
-          className="icon-btn delete"
-          onClick={() => onDelete(template.id)}
+        <button 
+          className="button--icon button--icon--delete" 
+          onClick={() => onDelete(template.id)} 
           title="削除"
         >
           <Icons.Delete />

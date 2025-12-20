@@ -457,29 +457,24 @@ const Options: React.FC = () => {
       onDragCancel={handleDragCancel}
     >
       <div className="options-container">
-        {/* ヘッダー */}
         <header className="options-header">
           <h1>Invoke Prompts from Templates</h1>
         </header>
 
-        {/* グループエリア */}
-        <div className="group-area-container">
-          <div className="group-actions-header">
-            <button className="add-group-btn" onClick={handleAddGroup}>
+        <div className="group-area">
+          <div className="group-area__header">
+            <button className="button button--add-group" onClick={handleAddGroup}>
               <Icons.PlaylistAdd />
               グループを追加
             </button>
           </div>
-
-          {/* グループが存在しない場合の空状態表示 */}
           {groups.length === 0 ? (
             <div className="empty-state">
               <p>まだグループがありません</p>
               <p>「追加」ボタンをクリックして開始しましょう</p>
             </div>
           ) : (
-            // グループ一覧
-            <div className="groups-container">
+            <div className="group-area__list">
               {groups.map((group, idx) => (
                 <React.Fragment key={group.id}>
                   <DropGap
@@ -519,7 +514,6 @@ const Options: React.FC = () => {
           )}
         </div>
 
-        {/* テンプレート編集モーダル */}
         {isModalOpen && (
           <TemplateModal
             template={editingTemplate}
@@ -529,32 +523,29 @@ const Options: React.FC = () => {
           />
         )}
 
-        {/* ドラッグ中のオーバーレイ表示 */}
         <DragOverlay dropAnimation={{ duration: 180, easing: 'ease-out' }}>
-          {/* テンプレートのドラッグ表示 */}
           {activeTemplate && (
-            <div className="template-item drag-overlay">
+            <div className="template template--drag-overlay">
               <DragHandle />
-              <span className="template-name">{activeTemplate.name}</span>
-              <div className="template-actions">
-                <button className="icon-btn">
+              <span className="template__name">{activeTemplate.name}</span>
+              <div className="template__actions">
+                <button className="button button--icon">
                   <Icons.Edit />
                 </button>
-                <button className="icon-btn delete">
+                <button className="button button--icon button--icon--delete">
                   <Icons.Delete />
                 </button>
               </div>
             </div>
           )}
 
-          {/* グループのドラッグ表示 */}
           {activeGroup && (
-            <div className="group-item dragging-overlay">
-              <div className="group-header">
-                <button className="expand-btn">
+            <div className="group group--drag-overlay">
+              <div className="group__header">
+                <button className="button button--expand">
                   <Icons.ExpandMore />
                 </button>
-                <span className="group-name">{activeGroup.name}</span>
+                <span className="group__name">{activeGroup.name}</span>
               </div>
             </div>
           )}

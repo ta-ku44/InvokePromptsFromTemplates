@@ -73,11 +73,9 @@ const setSuggestPos = (el: HTMLElement, data: StorageData) => {
   if (topRatio) {
     // TODO: 新規チャットでメッセージがある場合の位置調整
     container.style.top = `${window.scrollY + rect.top - container.offsetHeight}px`;
-    container.style.left = `${window.scrollX + rect.left}px`;
   } else {
     // TODO: 既存チャットの位置調整
     container.style.top = `${window.scrollY + rect.bottom}px`;
-    container.style.left = `${window.scrollX + rect.left}px`;
   }
   console.log('サジェスト位置を更新:', data)
 };

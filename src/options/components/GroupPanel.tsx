@@ -42,7 +42,6 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   isGroupDragging = false,
   groupDraggableId,
 }) => {
-  // グループ名編集状態
   const [isEditing, setIsEditing] = useState(startEditing);
   const [editName, setEditName] = useState(group.name);
 
@@ -57,14 +56,12 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
     }
   }, [startEditing]);
 
-  //* グループ名ダブルクリック時の編集開始
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
     setEditName(group.name);
   };
 
-  //* 編集終了処理
   const handleBlur = () => {
     setIsEditing(false);
     if (!editName.trim()) {
@@ -75,7 +72,6 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
     onEditingComplete?.();
   };
 
-  //* キーボード入力処理
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleBlur();
@@ -90,13 +86,12 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
 
   return (
     <div
-      className={`group-item ${isGroupDragging ? 'dragging' : ''}`}
-      style={isGroupDragging ? { opacity: 0.3 } : undefined}
+      className={`group ${isGroupDragging ? 'group--dragging' : ''}`}
     >
       {/* グループヘッダー */}
       <div
         ref={setDragRef}
-        className={`group-header ${activeTemplateId != null ? 'template-dragging' : ''}`}
+        className={`group__header ${activeTemplateId != null ? 'group__header--template-dragging' : ''}`}
         {...attributes}
         {...listeners}
         onClick={() => {
@@ -104,7 +99,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
         }}
       >
         <button
-          className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+          className={`button--expand ${isExpanded ? 'button--expand--expanded' : ''}`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
@@ -117,7 +112,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
         {isEditing ? (
           <input
             type="text"
-            className="group-name-input"
+            className="group__name-input"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleBlur}
@@ -127,9 +122,9 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
             autoFocus
           />
         ) : (
-          <span className="group-name">
+          <div className="group__name">
             <span
-              className="group-name-text"
+              className="group__name-text"
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 handleDoubleClick(e);
@@ -138,14 +133,12 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
             >
               {group.name}
             </span>
-          </span>
+          </div>
         )}
 
-        <div className="group-header-spacer" />
-
-        <div className="group-actions">
+        <div className="group__actions">
           <button
-            className="icon-btn delete"
+            className="button--icon button--icon--delete"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteGroup(group.id);
@@ -161,7 +154,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
 
       {/* テンプレート一覧 */}
       {isExpanded && !isGroupDragging && (
-        <div className="templates-container">
+        <div className="group__templates">
           <DropGap
             type="template"
             groupId={group.id}
@@ -188,9 +181,9 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
             </React.Fragment>
           ))}
 
-          <div className="add-template-wrapper">
+          <div className="add-template-wrapper" style={{ marginTop: '8px' }}>
             <button
-              className="add-template-btn"
+              className="button button--add-template"
               onClick={(e) => {
                 e.stopPropagation();
                 onAddTemplate(group.id);

@@ -37,7 +37,6 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
     <div 
       className="modal-overlay" 
       onMouseDown={(e) => {
-        // オーバーレイ自体がクリックされた場合のみ閉じる
         if (e.target === e.currentTarget) {
           onClose();
         }
@@ -45,10 +44,10 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
     >
       <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <h2>{template ? 'テンプレートを編集' : '新しいテンプレート'}</h2>
-        <div className={`modal-field ${showError && isNameEmpty ? 'error' : ''}`}>
+        <div className={`modal__field ${showError && isNameEmpty ? 'modal__field--error' : ''}`}>
           <label>
             テンプレート名
-            <span className="required-mark">*必須</span>
+            <span className="modal__field-required">*必須</span>
           </label>
           <input
             type="text"
@@ -60,10 +59,11 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
             placeholder="テンプレート名を入力"
           />
           {showError && isNameEmpty && (
-            <span className="error-message">テンプレート名は必須です</span>
+            <span className="modal__field-error">テンプレート名は必須です</span>
           )}
         </div>
-        <div className="modal-field">
+
+        <div className="modal__field">
           <label>内容</label>
           <textarea
             value={content}
@@ -71,12 +71,16 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
             placeholder="プロンプトの内容を入力"
           />
         </div>
-        <div className="modal-actions">
-          <button className="modal-btn cancel" onClick={onClose}>
+
+        <div className="modal__actions">
+          <button 
+            className="modal__button modal__button--cancel" 
+            onClick={onClose}
+          >
             キャンセル
           </button>
           <button 
-            className={`modal-btn save ${isNameEmpty ? 'disabled' : ''}`}
+            className={`modal__button modal__button--save ${isNameEmpty ? 'modal__button--save--disabled' : ''}`}
             onClick={handleSave}
             disabled={isNameEmpty}
           >

@@ -35,7 +35,7 @@ const DropGap: React.FC<DropGapProps> = ({
   return (
     <div 
       ref={setNodeRef} 
-      className={`drop-gap drop-gap-${type} ${isActive ? 'active' : ''}`}
+      className={`drop-gap drop-gap--${type} ${isActive ? 'drop-gap--active' : ''}`}
     />
   );
 };
