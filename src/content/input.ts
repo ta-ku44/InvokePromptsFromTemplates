@@ -1,6 +1,8 @@
 import type { Template } from "../types";
 
 export class InputHandler {
+  private cachedRegex: RegExp | null = null;
+
   inputElement: HTMLTextAreaElement | HTMLDivElement;
   key: string;
   onQueryChange: (query: string | null) => void;
@@ -12,81 +14,105 @@ export class InputHandler {
   }
 
   public updateKey(newKey: string) {
-    this.key = newKey;
-    console.log('InputHandlerのkey更新:', newKey);
+    if (this.key !== newKey) {
+      this.key = newKey;
+      this.cachedRegex = null;
+    }
   }
 
   public handleInput = () => {
-    const match = this.checkFormat(this.inputElement);
+    const text = this.getTextContent();
+    const match = text.match(this.getRegex());
     try {
-      if (match) {
-        const query = match[1] ?? '';
-        console.log('トリガー検知:', this.key, query);
-        this.onQueryChange(query);
-      } else {
+      if (!match) {
         this.onQueryChange(null);
+        return;
       }
+      this.onQueryChange(match[1] ?? "");
     } catch (e) {
       console.error('handleInputでエラーを検出:', e);
     }
   };
 
-  //* テンプレートを挿入
   public insertTemplate = (template: Template) => {
     const el = this.inputElement;
     const regex = this.getRegex();
 
     const oldText = el instanceof HTMLTextAreaElement ? el.value : el.innerText;
-
     const newText = oldText.replace(regex, (match) => {
-      const leadingSpace = match.startsWith(' ') ? ' ' : '';
+      const leadingSpace = match.startsWith(" ") ? " " : "";
       return leadingSpace + template.content;
     });
 
-    // テキストを更新し、キャレットを末尾に移動
     if (el instanceof HTMLTextAreaElement) {
-      console.log('Textareaにテンプレート挿入:', template.name);
       el.value = newText;
       el.selectionStart = el.selectionEnd = newText.length;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event("input", { bubbles: true }));
     } else {
-      console.log('ContentEditableにテンプレート挿入:', template.name);
-      el.innerText = newText;
-      const range = document.createRange();
-      const sel = window.getSelection();
-      
-      const textNode = el.childNodes[el.childNodes.length - 1] || el;
-      const offset = textNode.textContent?.length || 0;
+      const insertText = template.content + "  ";
+      const editorType = this.detectEditorType(el);
 
-      try {
-        range.setStart(textNode, offset);
-        range.collapse(true);
-
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      } catch (e) {
-        console.error('カーソル位置の設定に失敗:', e);
+      if (editorType === "lexical" || editorType === "prosemirror") {
+        if (!this.insertViaExecCommand(el, insertText)) {
+          this.fallbackInsert(el, newText);
+        }
+      } else {
+        if (!this.insertViaExecCommand(el, insertText)) {
+          this.fallbackInsert(el, newText);
+        }
       }
-      el.dispatchEvent(new InputEvent('input', { bubbles: true ,cancelable: true}));
     }
 
     el.focus();
   };
 
-  private checkFormat = (target: HTMLTextAreaElement | HTMLDivElement) => {
-    const text = target instanceof HTMLTextAreaElement
-      ? target.value
-      : target.innerText;
+  private getTextContent(): string {
+    return this.inputElement instanceof HTMLTextAreaElement
+      ? this.inputElement.value
+      : this.inputElement.innerText;
+  }
 
-    return text.match(this.getRegex());
-  };
+  private getRegex(): RegExp {
+    if (this.cachedRegex) return this.cachedRegex;
+    const escapedKey = this.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    this.cachedRegex = new RegExp(`(?:^|\\s)${escapedKey}([^${escapedKey}\\s]*)$`);
+    return this.cachedRegex;
+  }
 
-  private getRegex = () => {
-    const escapedKey = this.escapeRegex(this.key);
-    return new RegExp(`(?:^|\\s)${escapedKey}([^${escapedKey}\\s]*)$`);
-  };
+  private detectEditorType(el: HTMLDivElement): "lexical" | "prosemirror" | "standard" {
+    if (el.closest('[data-lexical-editor="true"]')) return "lexical";
+    if (el.closest(".ProseMirror")) return "prosemirror";
+    return "standard";
+  }
 
-  private escapeRegex = (text: string) => {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  };
+  private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
+    try {
+      this.moveCursorToEnd(el);
+      const success = document.execCommand("insertText", false, text);
+      if (success) el.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      return success;
+    } catch {
+      return false;
+    }
+  }
+
+  private fallbackInsert(el: HTMLDivElement, text: string) {
+    el.textContent = text;
+    this.moveCursorToEnd(el);
+    el.dispatchEvent(new InputEvent("input", { bubbles: true }));
+  }
+
+  private moveCursorToEnd(el: HTMLDivElement) {
+    const selection = window.getSelection();
+    if (!selection) return;
+    const range = document.createRange();
+    const textNode = el.childNodes[el.childNodes.length - 1] || el;
+    const offset = textNode.textContent?.length || 0;
+    try {
+      range.setStart(textNode, offset);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } catch {}
+  }
 }

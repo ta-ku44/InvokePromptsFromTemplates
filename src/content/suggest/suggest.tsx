@@ -5,16 +5,16 @@ import { loadStoredData } from '../../utils/storage';
 import type { Template, Group } from '../../types';
 
 let root: Root | null = null;
-let container: HTMLElement | null = null;
+let rootEl: HTMLElement | null = null;
 
 interface ShowSuggestParams {
   query: string;
   curInputEl: HTMLElement | null;
-  insertText: (template: Template) => void;
+  onInsert: (template: Template) => void;
 }
 
 //* サジェストを表示
-export const showSuggest = async ({ query, curInputEl, insertText }: ShowSuggestParams): Promise<void> => {
+export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestParams): Promise<void> => {
   if (!curInputEl) return;
 
   const data = await loadStoredData();
@@ -22,22 +22,23 @@ export const showSuggest = async ({ query, curInputEl, insertText }: ShowSuggest
     t.name.toLowerCase().includes(query.toLowerCase())
   );
   if (!templates.length) return;
-
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'pt-suggest-root';
-    container.style.position = 'absolute';
-    container.style.zIndex = `${Number.MAX_SAFE_INTEGER}`;
-    document.body.appendChild(container);
-    root = createRoot(container);
+  console.log('表示するテンプレート:', templates);
+  if (!rootEl) {
+    rootEl = Object.assign(document.createElement('div'), {
+      id: 'pt-suggest-root',
+      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER}`
+    });
+    document.body.appendChild(rootEl);
+    root = createRoot(rootEl);
   }
-  setSuggestPos(curInputEl);
+
+  setPos(curInputEl);
   root?.render(
     <Suggest
       templates={templates}
       groups={data.groups}
       inputEl={curInputEl}
-      onSelect={insertText}
+      onSelect={onInsert}
       onClose={hideSuggest}
     />
   );
@@ -47,32 +48,25 @@ export const showSuggest = async ({ query, curInputEl, insertText }: ShowSuggest
 export const hideSuggest = () => {
   root?.unmount();
   root = null;
-  container?.remove();
-  container = null;
+  rootEl?.remove();
+  rootEl = null;
 };
 
 //* サジェストの位置を設定
-const setSuggestPos = (el: HTMLElement) => {
-  if (!container) return;
+const setPos = (el: HTMLElement) => {
+  if (!rootEl) return;
 
   const rect = el.getBoundingClientRect();
-  const viewportHeight = window.innerHeight;
+  const sel = window.getSelection();
+  const rangeRect = sel?.rangeCount ? sel.getRangeAt(0).getBoundingClientRect() : null;
+  const left = rangeRect?.left ? rangeRect.left : rect.left;
 
-  // フォーカス位置に合わせてleftを調整
-  let left = rect.left;
-  const selection = window.getSelection();
-  if (selection && selection.rangeCount > 0) {
-    const r = selection.getRangeAt(0).getBoundingClientRect();
-    if (r.left !== 0) left = r.left;
-  }
+  const showAbove = rect.top / window.innerHeight > 0.75;
+  const height = rootEl.offsetHeight;
 
-  // 入力欄が中央付近なら下に、下部なら上に表示
-  const suggestHeight = container.offsetHeight;
-  const showAbove = rect.top / viewportHeight > 0.75;
-
-  container.style.left = `${window.scrollX + left}px`;
-  container.style.top = showAbove
-    ? `${window.scrollY + rect.top - suggestHeight - 15}px` // 15px: バッファ
+  rootEl.style.left = `${window.scrollX + left}px`;
+  rootEl.style.top = showAbove
+    ? `${window.scrollY + rect.top - height - 15}px` // 15px:バッファ
     : `${window.scrollY + rect.bottom}px`;
 };
 
@@ -144,7 +138,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
 
   // リサイズ・スクロール時に位置を更新
   useEffect(() => {
-    const update = () => setSuggestPos(inputEl);
+    const update = () => setPos(inputEl);
     const ro = new ResizeObserver(update);
     ro.observe(inputEl);
     window.addEventListener('resize', update);

@@ -31,7 +31,7 @@ const init = async () => {
         curInputEl = el;
         inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key, (query) => {
           if (query !== null) {
-            showSuggest({ query, curInputEl, insertText: (template) => { inputHandler?.insertTemplate(template);} });
+            showSuggest({ query, curInputEl, onInsert: (template) => { inputHandler?.insertTemplate(template);} });
           } else {
             hideSuggest();
           }
