@@ -79,7 +79,7 @@ interface SuggestProps {
 }
 
 const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect, onClose }) => {
-  // Refs
+  // 参照用のRef
   const suggestRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());

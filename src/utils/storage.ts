@@ -7,7 +7,7 @@ const DEFAULT_DATA: StorageData = {
   shortcutKey: '#',
 };
 
-//* Template関連のストレージ操作 */
+//* Template関連のストレージ操作
 export const loadStoredData = async (): Promise<StorageData> => {
   const result = await browser.storage.sync.get('data');
   const data = result.data as Partial<StorageData> | undefined;
@@ -63,7 +63,7 @@ export const reorderTemplates = async (groupId: number, orderedIds: number[]): P
   await saveTemplates(templates);
 };
 
-//* Group関連のストレージ操作 */
+//* Group関連のストレージ操作
 export const saveGroups = async (groups: Group[]): Promise<void> => {
   const data = await loadStoredData();
   await browser.storage.sync.set({ data: { ...data, groups } });
@@ -178,7 +178,7 @@ export const moveTemplateToGroup = async (
   await saveTemplates(updatedTemplates);
 };
 
-//* ショートカットキー関連のストレージ操作 */
+//* ショートカットキー関連のストレージ操作
 export const saveShortcutKey = async (shortcutKey: string): Promise<void> => {
   const data = await loadStoredData();
   await browser.storage.sync.set({ data: { ...data, shortcutKey } });

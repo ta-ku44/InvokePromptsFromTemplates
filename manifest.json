@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Invoke Prompts from Templates",
   "version": "1.0.0",
-  "description": "生成AIにSkills機能を追加",
+  "description": "",
   "permissions": ["storage"],
   "background": {
     "service_worker": "src/background/index.js",
@@ -13,13 +13,13 @@
       "matches": [
         "https://chatgpt.com/*",
         "https://gemini.google.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://perplexity.ai/*",
+        "https://notion.so/*"
       ],
       "js": ["src/content/index.js"]
     }
   ],
   "options_page": "src/options/index.html",
-  "action": {
-    "default_popup": "src/popup/index.html"
-  }
+  "action": {}
 }
