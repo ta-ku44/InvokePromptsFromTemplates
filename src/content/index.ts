@@ -7,21 +7,11 @@ let key = '#';
 let inputHandler: InputHandler | null = null;
 let curInputEl: HTMLElement | null = null;
 
-const loadKey = async () => {
-  const result = await browser.storage.sync.get('data');
-  key = (result.data as { shortcutKey?: string })?.shortcutKey || '#';
-  console.log('ロードされたショートカットキー:', key);
-
-  if (inputHandler) {
-    inputHandler.updateKey(key);
-  }
-};
-
 const init = async () => {
   await loadKey();
-
+  // DOM監視を開始
   const domObserver = new DomObserver({
-    onFound: (el: HTMLElement) => {
+    onFound: (el) => {
       console.log('入力欄を検出しInputHandlerを初期化:', el);
       if (curInputEl !== el){
         if (curInputEl && inputHandler) {
@@ -31,7 +21,7 @@ const init = async () => {
         curInputEl = el;
         inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key, (query) => {
           if (query !== null) {
-            showSuggest({ query, curInputEl, onInsert: (template) => { inputHandler?.insertTemplate(template);} });
+            showSuggest({ query, curInputEl, onInsert: (template) => { inputHandler?.insertPrompt(template);} });
           } else {
             hideSuggest();
           }
@@ -43,21 +33,29 @@ const init = async () => {
   domObserver.start();
 
   window.addEventListener('beforeunload', () => {
-        domObserver.stop();
-        hideSuggest();
-    });
+    domObserver.stop();
+    hideSuggest();
+  });
+};
+
+const loadKey = async () => {
+  const result = await browser.storage.sync.get('data');
+  key = (result.data as { shortcutKey: string }).shortcutKey || '#';
+
+  if (inputHandler) {
+    inputHandler.updateKey(key);
+  }
 };
 
 //* ショートカットキー変更を監視 */
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.data) {
-    const newKey = (changes.data.newValue as { shortcutKey?: string })?.shortcutKey;
-    if (typeof newKey === 'string') {
-      key = newKey;
-      console.log('ショートカットキー更新:', key);
-      if (inputHandler) {
-        inputHandler.updateKey(key);
-      }
+  if (area !== 'sync' && !changes.data) return;
+  const newKey = (changes.data.newValue as { shortcutKey: string }).shortcutKey;
+  if (typeof newKey === 'string') {
+    key = newKey;
+    console.log('ショートカットキー更新:', key);
+    if (inputHandler) {
+      inputHandler.updateKey(key);
     }
   }
 });

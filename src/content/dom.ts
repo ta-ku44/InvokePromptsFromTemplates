@@ -7,6 +7,7 @@ export class DomObserver {
     this.onFound = opts.onFound;
   }
 
+  //* 監視を開始
   public start = () => {
     if (this.observer) this.observer.disconnect();
 
@@ -23,8 +24,18 @@ export class DomObserver {
     });
 
     this.observer.observe(document.body, { childList: true, subtree: true });
-  }
+  };
 
+  //* 監視を停止
+  public stop = () => {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    this.curTextArea = null;
+  };
+
+  //* 入力欄を割り当て
   private assignTextArea = async (): Promise<void> => {
     const textArea = this.findTextAreas();
     
@@ -34,21 +45,13 @@ export class DomObserver {
     } else if (!textArea) {
       console.log('有効な入力欄が見つかりませんでした');
     }
-  }
+  };
 
-  public stop = () => {
-  if (this.observer) {
-      this.observer.disconnect();
-      this.observer = null;
-    }
-    this.curTextArea = null;
-  }
-
+  //* テキストエリアを探索
   private findTextAreas = (): HTMLElement | null => {
     const selectors = [
       '[contenteditable="true"]', // contenteditableを探索
       'textarea:not([disabled]):not([readonly])', // textareaを探索
-      '[role="textbox"]', // textboxを探索
     ];
 
     for (const s of selectors) {
@@ -61,7 +64,7 @@ export class DomObserver {
     return null;
   };
 
-  //* 入力欄が有効かチェック */
+  //* 入力欄が有効かチェック
   private isValidInput = (element: HTMLElement): boolean => {
     if (!element || !element.isConnected) return false;
     

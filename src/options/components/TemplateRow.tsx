@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { type Template } from '../../types/index.ts';
-import DragHandle from '../ui/DragHandle.tsx';
+import DragHandle from './DragHandle.tsx';
 import Icons from '../assets/icons.ts';
 
 interface TemplateRowProps {

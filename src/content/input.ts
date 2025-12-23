@@ -13,14 +13,6 @@ export class InputHandler {
     this.onQueryChange = onQueryChange;
   }
 
-  //* トリガーキーを更新
-  public updateKey(newKey: string) {
-    if (this.key !== newKey) {
-      this.key = newKey;
-      this.cachedRegex = null;
-    }
-  }
-
   //* 入力イベントを処理
   public handleInput = () => {
     const text = this.getTextContent();
@@ -31,61 +23,73 @@ export class InputHandler {
         return;
       }
       this.onQueryChange(match[1] ?? "");
-    } catch (e) {
-      console.error('handleInputでエラーを検出:', e);
+    } catch (error) {
+      console.error('handleInputでエラーを検出:', error);
     }
   };
 
   //* テンプレートを挿入
-  public insertTemplate = (template: Template) => {
+  public insertPrompt = (template: Template) => {
     const el = this.inputElement;
-    const regex = this.getRegex();
-
-    const oldText = el instanceof HTMLTextAreaElement ? el.value : el.innerText;
-    const newText = oldText.replace(regex, (match) => {
-      const leadingSpace = match.startsWith(" ") ? " " : "";
-      return leadingSpace + template.content;
-    });
 
     if (el instanceof HTMLTextAreaElement) {
-      // テキストエリアの場合
-      el.value = newText;
-      el.selectionStart = el.selectionEnd = newText.length;
-      el.dispatchEvent(new Event("input", { bubbles: true }));
+      this.insertIntoTextArea(el, template.content);
+    } else if (el instanceof HTMLDivElement) {
+      this.insertIntoContentEditable(el, template.content);
     } else {
-      // ContentEditable要素の場合
-      const editorType = this.detectEditorType(el);
-
-      if (editorType === "prosemirror") {
-        const type = this.detectProseMirrorType(el);
-        switch (type) {
-          case "tiptap":
-            console.log('Tiptapタイプを検出、execCommandで挿入を試行');
-            if (!this.insertViaExecCommand(el, template.content)) {
-              this.fallbackInsert(el, template.content);
-            }
-            break;
-          case "prosemirror":
-            console.log('ProseMirrorタイプを検出、innerTextで挿入を実行');
-            this.insertViaInnerText(el, template.content);
-            break;
-          default:
-            console.log('不明なProseMirrorタイプ、フォールバック挿入を実行');
-            this.fallbackInsert(el, template.content);
-            break;
-        }
-      } else if (editorType === "lexical") {
-
-      } else {
-        // ContentEditable標準の場合
-        if (!this.insertViaExecCommand(el, template.content)) {
-          this.fallbackInsert(el, template.content);
-        }
-      }
+      console.error('サポートされていない入力要素:', el);
+      return;
     }
 
     el.focus();
   };
+
+  //* トリガーキーを更新
+  public updateKey(newKey: string) {
+    if (this.key !== newKey) {
+      this.key = newKey;
+      this.cachedRegex = null;
+    }
+  }
+
+  //* TextAreaへの挿入処理
+  private insertIntoTextArea(el: HTMLTextAreaElement, content: string) {
+    const regex = this.getRegex();
+    const newText = el.value.replace(regex, (match) => {
+      const leadingSpace = match.startsWith(" ") ? " " : "";
+      return leadingSpace + content;
+    });
+
+    el.value = newText;
+    el.selectionStart = el.selectionEnd = newText.length;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  //* ContentEditableへの挿入処理
+  private insertIntoContentEditable(el: HTMLDivElement, content: string) {
+    const editorType = this.detectEditorType(el);
+
+    if (editorType === "prosemirror") {
+      this.handleProseMirrorInsert(el, content);
+    } else if (editorType === "lexical") {
+      // TODO: Lexical用の処理
+    } else {
+      this.insertViaExecCommand(el, content) || this.fallbackInsert(el, content);
+    }
+  }
+
+  //* ProseMirror系エディタへの挿入
+  private handleProseMirrorInsert(el: HTMLDivElement, content: string) {
+    const type = this.detectProseMirrorType(el);
+
+    if (type === "tiptap") {
+      this.insertViaExecCommand(el, content) || this.fallbackInsert(el, content);
+    } else if (type === "prosemirror") {
+      this.insertViaInnerText(el, content);
+    } else {
+      this.fallbackInsert(el, content);
+    }
+  }
 
   //* テキスト内容を取得
   private getTextContent(): string {
@@ -122,32 +126,34 @@ export class InputHandler {
     return "prosemirror";
   }
 
-  //* innerTextで挿入を試みる
+  //* innerTextで挿入
   private insertViaInnerText = (el: HTMLDivElement, text: string) => {
     try {
       el.innerText = text;
       this.moveCursorToEnd(el);
       el.dispatchEvent(new InputEvent("input", { bubbles: true }));
-    } catch {
-      console.log('innerTextによる挿入に失敗');
+    } catch (error) {
+      console.log('innerTextによる挿入に失敗:', error);
     }
   }
 
-  //* execCommandで挿入を試みる
+  //* execCommandで挿入
   private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
     try {
       this.moveCursorToEnd(el);
       const success = document.execCommand("insertText", false, text);
       if (success) el.dispatchEvent(new InputEvent("input", { bubbles: true }));
       return success;
-    } catch {
-      console.log('execCommandによる挿入に失敗');
+    } catch (error) {
+      console.log('execCommandによる挿入に失敗:', error);
       return false;
     }
   }
 
   //* フォールバック挿入
   private fallbackInsert(el: HTMLDivElement, text: string) {
+    console.log('フォールバック挿入を実行');
+
     el.textContent = text;
     this.moveCursorToEnd(el);
     el.dispatchEvent(new InputEvent("input", { bubbles: true }));
@@ -165,8 +171,8 @@ export class InputHandler {
       range.collapse(true);
       selection.removeAllRanges();
       selection.addRange(range);
-    } catch(e) {
-      console.error('カーソルの移動でエラーを検出:', e);
+    } catch(error) {
+      console.error('カーソルの移動でエラーを検出:', error);
     }
   }
 }

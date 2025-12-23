@@ -7,104 +7,198 @@ const DEFAULT_DATA: StorageData = {
   shortcutKey: '#',
 };
 
-//* Template関連のストレージ操作
+//* ストレージエラー処理
+class StorageError extends Error {
+  public readonly cause?: unknown;
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = 'StorageError';
+    this.cause = cause;
+  }
+}
+
+//* 基本操作
 export const loadStoredData = async (): Promise<StorageData> => {
-  const result = await browser.storage.sync.get('data');
-  const data = result.data as Partial<StorageData> | undefined;
-  return { ...DEFAULT_DATA, ...data };
+  try {
+    const result = await browser.storage.sync.get('data');
+    const data = result.data as Partial<StorageData> | undefined;
+    return { ...DEFAULT_DATA, ...data };
+  } catch (error) {
+    throw new StorageError('データの読み込みに失敗しました', error);
+  }
 };
 
-export const saveTemplates = async (templates: Template[]): Promise<void> => {
+const saveStoredData = async (data: StorageData): Promise<void> => {
+  try {
+    await browser.storage.sync.set({ data });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      throw new StorageError('ストレージの容量が超過しました', error);
+    }
+    throw new StorageError('データの保存に失敗しました', error);
+  }
+};
+
+const updateStoredData = async (
+  updater: (data: StorageData) => StorageData
+): Promise<void> => {
   const data = await loadStoredData();
-  await browser.storage.sync.set({ data: { ...data, templates } });
+  const updated = updater(data);
+  await saveStoredData(updated);
+};
+
+//* ユーティリティ
+const getNextId = <T extends { id: number }>(items: T[]): number =>
+  items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+
+const getNextOrder = <T extends { order: number }>(items: T[]): number =>
+  items.reduce((max, item) => Math.max(max, item.order), 0) + 1;
+
+const reorderItems = <T extends { id: number; order: number }>(
+  items: T[],
+  orderedIds: number[]
+): T[] =>
+  items.map(item => {
+    const newOrder = orderedIds.indexOf(item.id);
+    return newOrder !== -1 ? { ...item, order: newOrder } : item;
+  });
+
+//* Template操作
+export const saveTemplates = async (templates: Template[]): Promise<void> => {
+  await updateStoredData(data => ({ ...data, templates }));
 };
 
 export const addTemplate = async (template: Omit<Template, 'id' | 'order'>): Promise<void> => {
-  const data = await loadStoredData();
-  const maxId = data.templates.reduce((max, t) => Math.max(max, t.id), 0);
-  const maxOrder = data.templates
-    .filter(t => t.groupId === template.groupId)
-    .reduce((max, t) => Math.max(max, t.order), 0);
-  const newTemplate: Template = {
-    ...template,
-    id: maxId + 1,
-    order: maxOrder + 1,
-  };
-  await saveTemplates([...data.templates, newTemplate]);
+  await updateStoredData(data => {
+    const groupTemplates = data.templates.filter(t => t.groupId === template.groupId);
+    const newTemplate: Template = {
+      ...template,
+      id: getNextId(data.templates),
+      order: getNextOrder(groupTemplates),
+    };
+    return { ...data, templates: [...data.templates, newTemplate] };
+  });
 };
 
 export const updateTemplate = async (id: number, updates: Partial<Template>): Promise<void> => {
-  const data = await loadStoredData();
-  const templates = data.templates.map(t => 
-    t.id === id ? { ...t, ...updates } : t
-  );
-  await saveTemplates(templates);
+  await updateStoredData(data => ({
+    ...data,
+    templates: data.templates.map(t => (t.id === id ? { ...t, ...updates } : t)),
+  }));
 };
 
 export const deleteTemplate = async (id: number): Promise<void> => {
-  const data = await loadStoredData();
-  const templates = data.templates.filter(t => t.id !== id);
-  await saveTemplates(templates);
+  await updateStoredData(data => ({
+    ...data,
+    templates: data.templates.filter(t => t.id !== id),
+  }));
 };
 
 export const deleteAllTemplates = async (): Promise<void> => {
-  await saveTemplates([]);
-}
-
-export const reorderTemplates = async (groupId: number, orderedIds: number[]): Promise<void> => {
-  const data = await loadStoredData();
-  const templates = data.templates.map(t => {
-    if (t.groupId === groupId) {
-      const newOrder = orderedIds.indexOf(t.id);
-      return { ...t, order: newOrder !== -1 ? newOrder : t.order };
-    }
-    return t;
-  });
-  await saveTemplates(templates);
+  await updateStoredData(data => ({ ...data, templates: [] }));
 };
 
-//* Group関連のストレージ操作
+export const reorderTemplates = async (groupId: number, orderedIds: number[]): Promise<void> => {
+  await updateStoredData(data => ({
+    ...data,
+    templates: data.templates.map(t => {
+      if (t.groupId !== groupId) return t;
+      const newOrder = orderedIds.indexOf(t.id);
+      return newOrder !== -1 ? { ...t, order: newOrder } : t;
+    }),
+  }));
+};
+
+//* テンプレート移動時のorder調整
+const adjustOrderOnMove = (
+  template: Template,
+  targetId: number,
+  oldGroupId: number | undefined,
+  oldOrder: number,
+  newGroupId: number | undefined,
+  newOrder: number
+): Template => {
+  if (template.id === targetId) {
+    return { ...template, groupId: newGroupId, order: newOrder };
+  }
+
+  // 同じグループ内での移動
+  if (oldGroupId === newGroupId && template.groupId === newGroupId) {
+    if (oldOrder < newOrder && template.order > oldOrder && template.order <= newOrder) {
+      return { ...template, order: template.order - 1 };
+    }
+    if (oldOrder > newOrder && template.order >= newOrder && template.order < oldOrder) {
+      return { ...template, order: template.order + 1 };
+    }
+  }
+
+  // 異なるグループ間での移動
+  if (oldGroupId !== newGroupId) {
+    if (template.groupId === oldGroupId && template.order > oldOrder) {
+      return { ...template, order: template.order - 1 };
+    }
+    if (template.groupId === newGroupId && template.order >= newOrder) {
+      return { ...template, order: template.order + 1 };
+    }
+  }
+
+  return template;
+};
+
+export const moveTemplateToGroup = async (
+  templateId: number,
+  newGroupId: number | undefined,
+  newOrder: number
+): Promise<void> => {
+  await updateStoredData(data => {
+    const targetTemplate = data.templates.find(t => t.id === templateId);
+    if (!targetTemplate) return data;
+
+    const { groupId: oldGroupId, order: oldOrder } = targetTemplate;
+    const templates = data.templates.map(t =>
+      adjustOrderOnMove(t, templateId, oldGroupId, oldOrder, newGroupId, newOrder)
+    );
+
+    return { ...data, templates };
+  });
+};
+
+//* Group操作
 export const saveGroups = async (groups: Group[]): Promise<void> => {
-  const data = await loadStoredData();
-  await browser.storage.sync.set({ data: { ...data, groups } });
-}
+  await updateStoredData(data => ({ ...data, groups }));
+};
 
 export const addGroup = async (group: Omit<Group, 'id' | 'order'>): Promise<number> => {
   const data = await loadStoredData();
-  const maxId = data.groups.reduce((max, g) => Math.max(max, g.id), 0);
-  const maxOrder = data.groups.reduce((max, g) => Math.max(max, g.order), 0);
   const newGroup: Group = {
     ...group,
-    id: maxId + 1,
-    order: maxOrder + 1,
+    id: getNextId(data.groups),
+    order: getNextOrder(data.groups),
   };
   await saveGroups([...data.groups, newGroup]);
   return newGroup.id;
 };
 
 export const updateGroup = async (id: number, updates: Partial<Group>): Promise<void> => {
-  const data = await loadStoredData();
-  const groups = data.groups.map(g => 
-    g.id === id ? { ...g, ...updates } : g
-  );
-  await saveGroups(groups);
+  await updateStoredData(data => ({
+    ...data,
+    groups: data.groups.map(g => (g.id === id ? { ...g, ...updates } : g)),
+  }));
 };
 
 export const deleteGroup = async (id: number): Promise<void> => {
-  const data = await loadStoredData();
-  const groups = data.groups.filter(g => g.id !== id);
-  // グループに属するテンプレートも削除
-  const templates = data.templates.filter(t => t.groupId !== id);
-  await browser.storage.sync.set({ data: { ...data, groups, templates } });
+  await updateStoredData(data => ({
+    ...data,
+    groups: data.groups.filter(g => g.id !== id),
+    templates: data.templates.filter(t => t.groupId !== id),
+  }));
 };
 
 export const reorderGroups = async (orderedIds: number[]): Promise<void> => {
-  const data = await loadStoredData();
-  const groups = data.groups.map(g => {
-    const newOrder = orderedIds.indexOf(g.id);
-    return { ...g, order: newOrder !== -1 ? newOrder : g.order };
-  });
-  await saveGroups(groups);
+  await updateStoredData(data => ({
+    ...data,
+    groups: reorderItems(data.groups, orderedIds),
+  }));
 };
 
 export const getTemplatesByGroup = async (groupId: number): Promise<Template[]> => {
@@ -114,74 +208,9 @@ export const getTemplatesByGroup = async (groupId: number): Promise<Template[]> 
     .sort((a, b) => a.order - b.order);
 };
 
-export const moveTemplateToGroup = async (
-  templateId: number,
-  newGroupId: number,
-  newOrder: number
-): Promise<void> => {
-  const data = await loadStoredData();
-  // 移動対象のテンプレートを取得
-  const targetTemplate = data.templates.find(t => t.id === templateId);
-  if (!targetTemplate) return;
-  
-  const oldGroupId = targetTemplate.groupId;
-  const oldOrder = targetTemplate.order;
-  
-  let updatedTemplates: Template[];
-  
-  if (oldGroupId === newGroupId) {
-    // 同じグループ内での移動
-    updatedTemplates = data.templates.map(t => {
-      if (t.groupId !== newGroupId) return t;
-      
-      if (t.id === templateId) {
-        // 移動対象のテンプレート
-        return { ...t, order: newOrder };
-      }
-      
-      // 他のテンプレートのorder調整
-      if (oldOrder < newOrder) {
-        // 下方向への移動: oldOrder < t.order <= newOrder の範囲を-1
-        if (t.order > oldOrder && t.order <= newOrder) {
-          return { ...t, order: t.order - 1 };
-        }
-      } else {
-        // 上方向への移動: newOrder <= t.order < oldOrder の範囲を+1
-        if (t.order >= newOrder && t.order < oldOrder) {
-          return { ...t, order: t.order + 1 };
-        }
-      }
-      
-      return t;
-    });
-  } else {
-    // 異なるグループ間での移動
-    updatedTemplates = data.templates.map(t => {
-      if (t.id === templateId) {
-        // 移動対象のテンプレート
-        return { ...t, groupId: newGroupId, order: newOrder };
-      }
-      
-      if (t.groupId === oldGroupId && t.order > oldOrder) {
-        // 元のグループ: 移動したテンプレートより後ろのものを-1
-        return { ...t, order: t.order - 1 };
-      }
-      
-      if (t.groupId === newGroupId && t.order >= newOrder) {
-        // 新しいグループ: 挿入位置以降のものを+1
-        return { ...t, order: t.order + 1 };
-      }
-      
-      return t;
-    });
-  }
-  await saveTemplates(updatedTemplates);
-};
-
-//* ショートカットキー関連のストレージ操作
+//* ショートカットキー操作
 export const saveShortcutKey = async (shortcutKey: string): Promise<void> => {
-  const data = await loadStoredData();
-  await browser.storage.sync.set({ data: { ...data, shortcutKey } });
+  await updateStoredData(data => ({ ...data, shortcutKey }));
 };
 
 export const loadShortcutKey = async (): Promise<string> => {
@@ -190,5 +219,5 @@ export const loadShortcutKey = async (): Promise<string> => {
 };
 
 export const resetStorage = async (): Promise<void> => {
-  await browser.storage.sync.set({ data: DEFAULT_DATA });
-}
+  await saveStoredData(DEFAULT_DATA);
+};

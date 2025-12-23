@@ -3,7 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import type { Group, Template } from '../../types/index.ts';
 import Icons from '../assets/icons.ts';
 import TemplateRow from './TemplateRow.tsx';
-import DropGap from '../ui/DropGap.tsx';
+import DropGap from './DropGap.tsx';
 
 interface GroupPanelProps {
   group: Group;
