@@ -179,7 +179,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     const onKeyDownCapture = (e: KeyboardEvent) => {
       if (!flatTemplates.length || keyboardSelectedId == null) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        console.time('keyboard-update');
         setIsKeyboardMode(true);
         e.preventDefault();
         e.stopPropagation();
@@ -192,7 +191,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
         if (e.key === 'ArrowUp' && idx > 0) {
           setKeyboardSelectedId(flatTemplates[idx - 1].id);
         }
-        console.timeEnd('keyboard-update');
       }
 
       if (e.key === 'Tab') {
@@ -211,7 +209,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
 
   useLayoutEffect(() => {
     if (keyboardSelectedId == null) return;
-    console.time('scroll-sync');
 
     const itemEl = itemRefs.current.get(keyboardSelectedId);
     const listEl = listRef.current;
@@ -239,7 +236,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
       const targetScroll = listEl.scrollTop + (itemRelativeBottom - centerZoneEnd);
       listEl.scrollTop = Math.min(listEl.scrollHeight - listHeight, targetScroll);
     }
-    console.timeEnd('scroll-sync');
   }, [keyboardSelectedId, flatTemplates]);
 
   useEffect(() => {

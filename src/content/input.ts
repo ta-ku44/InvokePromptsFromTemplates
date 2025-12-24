@@ -139,6 +139,7 @@ export class InputHandler {
 
   //* execCommandで挿入
   private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
+    if (!text) return false;
     try {
       this.moveCursorToEnd(el);
       const success = document.execCommand("insertText", false, text);
