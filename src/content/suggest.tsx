@@ -1,9 +1,9 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import getCaretCoordinates from 'textarea-caret';
+import { loadStoredData } from '../utils/storage';
+import type { Template, Group, StorageData } from '../types';
 import './styles.scss';
-import { loadStoredData } from '../../utils/storage';
-import type { Template, Group, StorageData } from '../../types';
 
 let root: Root | null = null;
 let rootEl: HTMLElement | null = null;
@@ -93,7 +93,7 @@ const setPos = (el: HTMLElement) => {
     : `${window.scrollY + rect.bottom}px`;
 };
 
-//* キャッシュされたデータを取得
+//* キャッシュデータを取得
 const getCachedData = async (): Promise<StorageData> => {
   if (cachedData) return cachedData;
   if (cachePromise) return cachePromise;
@@ -129,6 +129,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [isKeyboardMode, setIsKeyboardMode] = useState(true);
 
+  // グループごとにテンプレートを分類
   const groupedData = useMemo(() => {
     const map = new Map<number | null, Template[]>();
     const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
@@ -156,6 +157,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     return map;
   }, [templates, groups]);
 
+  // グループ名を取得
   const getGroupName = (id: number | null) =>
     id === null
       ? 'other'
@@ -174,6 +176,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     }
   }, [flatTemplates]);
 
+  // 位置を設定
   useLayoutEffect(() => {
     setPos(inputEl);
     if (rootEl) {
@@ -195,6 +198,26 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     };
   }, [inputEl]);
 
+  // サジェストを閉じる処理
+  useEffect(() => {
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (
+        suggestRef.current &&
+        (!suggestRef.current.contains(e.target as Node) ||
+          (e instanceof KeyboardEvent && e.key === 'Escape'))
+      ) {
+        onClose();
+      }
+    };
+    window.addEventListener('mousedown', close);
+    window.addEventListener('keydown', close);
+    return () => {
+      window.removeEventListener('mousedown', close);
+      window.removeEventListener('keydown', close);
+    };
+  }, [onClose]);
+
+  // 選択している項目の管理
   useEffect(() => {
     const onKeyDownCapture = (e: KeyboardEvent) => {
       if (!flatTemplates.length || keyboardSelectedId == null) return;
@@ -227,6 +250,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
       window.removeEventListener('keydown', onKeyDownCapture, true);
   }, [flatTemplates, keyboardSelectedId, onSelect]);
 
+  // 選択項目が中央に来るようスクロール
   useLayoutEffect(() => {
     if (keyboardSelectedId == null) return;
 
@@ -258,24 +282,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     }
   }, [keyboardSelectedId, flatTemplates]);
 
-  useEffect(() => {
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (
-        suggestRef.current &&
-        (!suggestRef.current.contains(e.target as Node) ||
-          (e instanceof KeyboardEvent && e.key === 'Escape'))
-      ) {
-        onClose();
-      }
-    };
-    window.addEventListener('mousedown', close);
-    window.addEventListener('keydown', close);
-    return () => {
-      window.removeEventListener('mousedown', close);
-      window.removeEventListener('keydown', close);
-    };
-  }, [onClose]);
-
+  // マウス移動でキーボードモード解除
   useEffect(() => {
     const onMouseMove = () => {
       setIsKeyboardMode(false);
@@ -292,7 +299,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
             <div className="suggest__group-header">
               {getGroupName(groupId)}
             </div>
-
             {list
               .slice()
               .sort((a, b) => a.order - b.order)

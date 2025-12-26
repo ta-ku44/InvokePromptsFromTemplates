@@ -1,19 +1,26 @@
 import type { Template } from "../types";
 
 export class InputHandler {
+  private inputElement: HTMLElement;
+  private key: string;
   private cachedRegex: RegExp | null = null;
+  private onQueryChange: (query: string | null) => void;
 
-  inputElement: HTMLTextAreaElement | HTMLDivElement;
-  key: string;
-  onQueryChange: (query: string | null) => void;
-
-  constructor(inputElement: HTMLTextAreaElement | HTMLDivElement, key: string, onQueryChange: (query: string | null) => void) {
+  constructor(inputElement: HTMLElement, key: string, onQueryChange: (query: string | null) => void) {
     this.inputElement = inputElement;
     this.key = key;
     this.onQueryChange = onQueryChange;
   }
 
-  //* 入力イベントを処理
+  //* トリガーキーを更新
+  public updateKey(newKey: string) {
+    if (this.key !== newKey) {
+      this.key = newKey;
+      this.cachedRegex = null;
+    }
+  }
+
+  //* 入力状況を出力
   public handleInput = () => {
     const text = this.getTextContent();
     const match = text.match(this.getRegex());
@@ -30,76 +37,22 @@ export class InputHandler {
 
   //* テンプレートを挿入
   public insertPrompt = (template: Template) => {
-    console.group("InputHandler.insertPrompt");
+    console.group("Inserting Template:", template.name);
     const el = this.inputElement;
+    console.log('HTMLElement type:', el.tagName);
 
     if (el instanceof HTMLTextAreaElement) {
-      console.log('HTMLElement type:', el.tagName);
       this.insertIntoTextArea(el, template.content);
     } else if (el instanceof HTMLDivElement) {
-      console.log('HTMLElement type:', el.tagName);
       this.insertIntoContentEditable(el, template.content);
     } else {
-      console.error('サポートされていない入力要素:', el);
+      console.error('Unsupported element type', el);
       return;
     }
 
     console.groupEnd();
     el.focus();
   };
-
-  //* トリガーキーを更新
-  public updateKey(newKey: string) {
-    if (this.key !== newKey) {
-      this.key = newKey;
-      this.cachedRegex = null;
-    }
-  }
-
-  //* TextAreaへの挿入処理
-  private insertIntoTextArea(el: HTMLTextAreaElement, content: string) {
-    const regex = this.getRegex();
-    const newText = el.value.replace(regex, (match) => {
-      const leadingSpace = match.startsWith(" ") ? " " : "";
-      return leadingSpace + content;
-    });
-
-    el.value = newText;
-    el.selectionStart = el.selectionEnd = newText.length;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  //* ContentEditableへの挿入処理
-  private insertIntoContentEditable(el: HTMLDivElement, content: string) {
-    const editorType = this.detectEditorType(el);
-
-    if (editorType === "prosemirror") {
-      console.log('ContentEditable Editor Type: ProseMirror');
-      this.handleProseMirrorInsert(el, content);
-    } else if (editorType === "lexical") {
-      console.log('ContentEditable Editor Type: Lexical');
-      // TODO: Lexical用の処理
-    } else {
-      console.log('ContentEditable Editor Type: Standard');
-      this.insertViaExecCommand(el, content) || this.fallbackInsert(el, content);
-    }
-  }
-
-  //* ProseMirror系エディタへの挿入
-  private handleProseMirrorInsert(el: HTMLDivElement, content: string) {
-    const type = this.detectProseMirrorType(el);
-
-    if (type === "tiptap") {
-      console.log('ProseMirror Type: Tiptap');
-      this.insertViaExecCommand(el, content) || this.fallbackInsert(el, content);
-    } else if (type === "prosemirror") {
-      console.log('ProseMirror Type: Vanilla ProseMirror');
-      this.insertViaInnerText(el, content);
-    } else {
-      console.log('ProseMirror Type: Unknown - using fallback');
-      this.fallbackInsert(el, content);
-    }
-  }
 
   //* テキスト内容を取得
   private getTextContent(): string {
@@ -116,9 +69,73 @@ export class InputHandler {
     return this.cachedRegex;
   }
 
+  //* マッチ部分をコンテンツで置換
+  private replaceMatchesWithContent(text: string, content: string): string {
+    const regex = this.getRegex();
+    return text.replace(regex, (match) => {
+      const leadingSpace = match.startsWith(" ") ? " " : "";
+      return leadingSpace + content;
+    });
+  }
+
+  //* TextAreaへの挿入処理
+  private insertIntoTextArea(el: HTMLTextAreaElement, content: string) {
+    const newText = this.replaceMatchesWithContent(el.value, content);
+    el.value = newText;
+    el.selectionStart = el.selectionEnd = newText.length;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  //* ContentEditableへの挿入処理
+  private insertIntoContentEditable(el: HTMLDivElement, content: string) {
+    const editorType = this.detectEditorType(el);
+    console.log('ContentEditable Editor Type:', editorType);
+
+    if (editorType === "prosemirror") {
+      this.handleProseMirrorInsert(el, content);
+    } else if (editorType === "lexical") {
+      this.insertIntoLexical(el, content);
+    } else {
+      this.insertViaExecCommand(el, content) || this.fallbackInsert(el, content);
+    }
+  }
+
+  //* ProseMirror系エディタへの挿入
+  private handleProseMirrorInsert(el: HTMLDivElement, content: string) {
+    const proseMirrorType = this.detectProseMirrorType(el);
+    console.log('ProseMirror Type:', proseMirrorType);
+
+    if (proseMirrorType === "tiptap") {
+      this.insertViaExecCommand(el, content) || this.fallbackInsert(el, content);
+    } else if (proseMirrorType === "prosemirror") {
+      this.insertViaInnerText(el, content);
+    } else {
+      console.log('unknown ProseMirror type, using fallback insertion');
+      this.fallbackInsert(el, content);
+    }
+  }
+
+  //* Lexicalで挿入
+  private insertIntoLexical = (el: HTMLDivElement, text: string): boolean => {
+    try {
+      console.log('Lexicalに挿入', el, text);
+      
+      return true;
+    } catch (error) {
+      console.log('Lexicalの挿入に失敗:', error);
+      return false;
+    }
+  }
+
   //* エディタータイプを返す
   private detectEditorType(el: HTMLDivElement): "lexical" | "prosemirror" | "standard" {
-    if (el.closest('[data-lexical-editor="true"]')) return "lexical";
+    // Lexical判定
+    if (el.getAttribute('data-lexical-editor') === 'true' ||
+        el.closest('[data-lexical-editor="true"]') ||
+        el.id === 'ask-input') {
+      return "lexical";
+    }
+    // ProseMirror判定
     if (el.closest(".ProseMirror")) return "prosemirror";
     return "standard";
   };
@@ -134,18 +151,7 @@ export class InputHandler {
     }
     // 要素内になければProseMirrorと判定
     return "prosemirror";
-  }
-
-  //* innerTextで挿入
-  private insertViaInnerText = (el: HTMLDivElement, text: string) => {
-    try {
-      el.innerText = text;
-      this.moveCursorToEnd(el);
-      el.dispatchEvent(new InputEvent("input", { bubbles: true }));
-    } catch (error) {
-      console.log('innerTextによる挿入に失敗:', error);
-    }
-  }
+  };
 
   //* execCommandで挿入
   private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
@@ -159,15 +165,30 @@ export class InputHandler {
       console.log('execCommandによる挿入に失敗:', error);
       return false;
     }
-  }
+  };
+
+  //* innerTextで挿入
+  private insertViaInnerText = (el: HTMLDivElement, text: string) => {
+    try {
+      el.innerText = text;
+      this.moveCursorToEnd(el);
+      el.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    } catch (error) {
+      console.log('innerTextによる挿入に失敗:', error);
+    }
+  };
 
   //* フォールバック挿入
   private fallbackInsert(el: HTMLDivElement, text: string) {
     console.log('フォールバック挿入を実行');
 
-    el.textContent = text;
-    this.moveCursorToEnd(el);
-    el.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    try {
+      el.textContent = text;
+      this.moveCursorToEnd(el);
+      el.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    } catch (error) {
+      console.error('フォールバック挿入でエラーを検出:', error);
+    }
   }
 
   //* カーソルを末尾に移動

@@ -38,7 +38,7 @@ export class DomObserver {
 
   //* 入力欄を割り当て
   private assignTextArea = async (): Promise<void> => {
-    const textArea = this.findTextAreas();
+    const textArea = this.findTextArea();
     
     if (textArea && textArea !== this.curTextArea) {
       this.curTextArea = textArea;
@@ -49,7 +49,7 @@ export class DomObserver {
   };
 
   //* テキストエリアまたはコンテンツエディタブル要素を検索
-  private findTextAreas = (): HTMLElement | null => {
+  private findTextArea = (): HTMLElement | null => {
     const selectors = [
       '[contenteditable="true"]',
       'textarea:not([disabled]):not([readonly])',
