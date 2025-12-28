@@ -22,6 +22,7 @@ interface GroupPanelProps {
   activeGapId?: string | null;
   groupDraggableId?: string;
   isGroupDragging?: boolean;
+  isAnyGroupDragging?: boolean;
 }
 
 const GroupPanel: React.FC<GroupPanelProps> = ({
@@ -40,6 +41,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   activeTemplateId = null,
   activeGapId = null,
   isGroupDragging = false,
+  isAnyGroupDragging = false,
   groupDraggableId,
 }) => {
   const [isEditing, setIsEditing] = useState(startEditing);
@@ -160,6 +162,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
             groupId={group.id}
             indexOrId={0}
             isActive={activeGapId === `gap-${group.id}-0`}
+            disabled={isAnyGroupDragging}
           />
 
           {sortedTemplates.map((template, idx) => (
@@ -170,6 +173,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
                 onDelete={onDeleteTemplate}
                 onNameChange={onTemplateNameChange}
                 isDragging={activeTemplateId === template.id}
+                disabled={isAnyGroupDragging}
               />
 
               <DropGap
@@ -177,6 +181,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
                 groupId={group.id}
                 indexOrId={idx + 1}
                 isActive={activeGapId === `gap-${group.id}-${idx + 1}`}
+                disabled={isAnyGroupDragging}
               />
             </React.Fragment>
           ))}

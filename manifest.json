@@ -13,13 +13,9 @@
       "matches": [
         "https://*.chatgpt.com/*",
         "https://*.openai.com/*",
-        "https://chat.com/*",
-
         "https://gemini.google.com/*",
         "https://notebooklm.google.com/*",
-
         "https://claude.ai/*",
-
         "https://*.perplexity.ai/*",
 
         "https://*.notion.so/*",
@@ -28,8 +24,7 @@
 
         "https://grok.com/*",
         "https://*.x.ai/*",
-        "https://x.com/grok/*",
-
+        "https://x.com/i/grok*",
         "https://*.deepseek.com/*",
         "https://ai.com/*",
 

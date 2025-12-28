@@ -147,6 +147,7 @@ const Options: React.FC = () => {
                     activeGapId={activeTemplateGapId}
                     groupDraggableId={`group-${group.id}`}
                     isGroupDragging={activeGroupId === group.id}
+                    isAnyGroupDragging={activeGroupId !== null}
                   />
                 </React.Fragment>
               ))}

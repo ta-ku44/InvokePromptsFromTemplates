@@ -10,6 +10,7 @@ interface TemplateRowProps {
   onDelete: (id: number) => void;
   onNameChange: (id: number, name: string) => void;
   isDragging?: boolean;
+  disabled?: boolean;
 }
 
 const TemplateRow: React.FC<TemplateRowProps> = ({
@@ -18,6 +19,7 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
   onDelete,
   onNameChange,
   isDragging = false,
+  disabled = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(template.name);
@@ -29,11 +31,13 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
   } = useDraggable({
     id: `template-${template.id}`,
     data: { type: 'template', template },
+    disabled,
   });
 
   const { setNodeRef: setDropRef } = useDroppable({
     id: `template-${template.id}`,
     data: { type: 'template', template },
+    disabled,
   });
 
   const setNodeRef = useCallback(

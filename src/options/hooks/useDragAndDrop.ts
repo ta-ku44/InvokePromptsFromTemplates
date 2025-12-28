@@ -45,6 +45,8 @@ export const useDragAndDrop = ({
     const { active } = event;
     const idStr = String(active.id);
     
+    console.log('Drag Start:', { activeId: idStr });
+
     if (idStr.startsWith('template-')) {
       const templateId = parseInt(idStr.replace('template-', ''), 10);
       setActiveTemplateId(templateId);
@@ -66,7 +68,17 @@ export const useDragAndDrop = ({
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over, delta } = event;
+    const { active, over, delta, activatorEvent } = event;
+
+    console.log('Drag Over:', {
+      activeId: String(active.id),
+      overId: over ? String(over.id) : null,
+      delta,
+      pointer: {
+        x: (activatorEvent as MouseEvent).clientX,
+        y: (activatorEvent as MouseEvent).clientY,
+      }
+    });
 
     if (!over) {
       setActiveTemplateGapId(null);
@@ -112,6 +124,12 @@ export const useDragAndDrop = ({
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    console.log('Drag End:', {
+      activeId: String(active.id),
+      overId: over ? String(over.id) : null,
+    });
+
     const activeIdStr = String(event.active.id);
 
     if (activeIdStr.startsWith('group-')) {
@@ -158,6 +176,12 @@ export const useDragAndDrop = ({
     }
 
     const targetIndex = parseInt(overIdStr.replace('group-gap-', ''), 10);
+    console.log('Group Drag End:', {
+      activeId: activeIdStr,
+      overId: overIdStr,
+      targetIndex,
+    });
+
     if (isNaN(targetIndex)) {
       await new Promise(resolve => setTimeout(resolve, 200));
       if (wasGroupExpandedBeforeDrag) {

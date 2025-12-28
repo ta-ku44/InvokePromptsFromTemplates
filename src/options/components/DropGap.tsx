@@ -7,6 +7,7 @@ interface DropGapProps {
   groupId?: number;
   isDraggingGroup?: boolean;
   isActive: boolean;
+  disabled?: boolean;
 }
 
 const DropGap: React.FC<DropGapProps> = ({
@@ -15,12 +16,13 @@ const DropGap: React.FC<DropGapProps> = ({
   groupId,
   isDraggingGroup = false,
   isActive,
+  disabled = false,
 }) => {
   const id = type === 'template' 
     ? `gap-${groupId}-${indexOrId}`
     : `group-gap-${indexOrId}`;
 
-  const isDisabled = type === 'group' && !isDraggingGroup;
+  const isDisabled = (type === 'group' && !isDraggingGroup) || disabled;
 
   const { setNodeRef } = useDroppable({
     id,
