@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Template } from '../../types';
 
-export const useUIState = (initialGroupIds: number[]) => {
+export const useUIState = (groupIds: number[]) => {
   const initializedRef = useRef(false);
+  const prevGroupIdsRef = useRef<number[]>([]);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(() => new Set());
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
@@ -11,12 +12,44 @@ export const useUIState = (initialGroupIds: number[]) => {
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    if (initialGroupIds.length === 0) return;
+    // 初回: すべてのグループを展開
+    if (!initializedRef.current && groupIds.length > 0) {
+      setExpandedGroups(new Set(groupIds));
+      prevGroupIdsRef.current = groupIds;
+      initializedRef.current = true;
+      return;
+    }
 
-    setExpandedGroups(new Set(initialGroupIds));
-    initializedRef.current = true;
-  }, [initialGroupIds]);
+    // 2回目以降: 新規追加されたグループのみ展開
+    if (initializedRef.current) {
+      const prevIds = new Set(prevGroupIdsRef.current);
+      const newGroupIds = groupIds.filter(id => !prevIds.has(id));
+      
+      if (newGroupIds.length > 0) {
+        setExpandedGroups(prev => {
+          const next = new Set(prev);
+          newGroupIds.forEach(id => next.add(id));
+          return next;
+        });
+      }
+
+      // 削除されたグループは展開状態から除外
+      const currentIds = new Set(groupIds);
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        let changed = false;
+        prev.forEach(id => {
+          if (!currentIds.has(id)) {
+            next.delete(id);
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+
+      prevGroupIdsRef.current = groupIds;
+    }
+  }, [groupIds]);
 
   const toggleGroup = (groupId: number) => {
     setExpandedGroups(prev => {

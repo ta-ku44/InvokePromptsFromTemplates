@@ -4,7 +4,7 @@ export class DomObserver {
   private onFound: (el: HTMLElement) => void;
   private onLost?: () => void;
 
-  constructor(opts: { onFound: (el: HTMLElement) => void; onLost?: () => void; }) {
+  constructor(opts: { onFound: (el: HTMLElement) => void; onLost?: () => void }) {
     this.onFound = opts.onFound;
     this.onLost = opts.onLost;
   }
@@ -15,7 +15,12 @@ export class DomObserver {
 
     this.observer = new MutationObserver(() => {
       // 既に入力欄を取得していてかつ、まだDOMに存在している場合
-      if (this.curTextArea && document.body.contains(this.curTextArea) && this.isValidInput(this.curTextArea)) return;
+      if (
+        this.curTextArea &&
+        document.body.contains(this.curTextArea) &&
+        this.isValidInput(this.curTextArea)
+      )
+        return;
       // 既に取得していた入力欄がDOMから削除されていた場合
       if (this.curTextArea && !document.body.contains(this.curTextArea)) {
         console.log('現在の入力欄がDOMから削除された');
@@ -39,7 +44,7 @@ export class DomObserver {
   //* 入力欄を割り当て
   private assignTextArea = async (): Promise<void> => {
     const textArea = this.findTextArea();
-    
+
     if (textArea && textArea !== this.curTextArea) {
       this.curTextArea = textArea;
       this.onFound(textArea);
@@ -50,10 +55,7 @@ export class DomObserver {
 
   //* テキストエリアまたはコンテンツエディタブル要素を検索
   private findTextArea = (): HTMLElement | null => {
-    const selectors = [
-      '[contenteditable="true"]',
-      'textarea:not([disabled]):not([readonly])',
-    ];
+    const selectors = ['[contenteditable="true"]', 'textarea:not([disabled]):not([readonly])'];
 
     for (const s of selectors) {
       const elements = document.querySelectorAll(s);
@@ -68,13 +70,15 @@ export class DomObserver {
   //* 要素が有効な入力欄かどうかを判定
   private isValidInput = (element: HTMLElement): boolean => {
     if (!element || !element.isConnected) return false;
-    
+
     const style = window.getComputedStyle(element);
     const rect = element.getBoundingClientRect();
-    return style.display !== 'none' && 
-          style.visibility !== 'hidden' &&
-          element.offsetParent !== null &&
-          rect.width > 0 &&
-          rect.height > 0;
+    return (
+      style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      element.offsetParent !== null &&
+      rect.width > 0 &&
+      rect.height > 0
+    );
   };
 }

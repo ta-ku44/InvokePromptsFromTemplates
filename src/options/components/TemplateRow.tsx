@@ -45,7 +45,7 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
       setDragRef(node);
       setDropRef(node);
     },
-    [setDragRef, setDropRef]
+    [setDragRef, setDropRef],
   );
 
   const handleDoubleClick = () => {
@@ -72,12 +72,13 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
   const isNameEmpty = !template.name.trim();
 
   return (
-    <div 
-      ref={setNodeRef} 
+    <div
+      ref={setNodeRef}
+      data-template-id={template.id}
       className={`template ${isDragging ? 'template--dragging' : ''}`}
     >
       <DragHandle listeners={listeners} attributes={attributes} />
-      
+
       {isEditing ? (
         <input
           type="text"
@@ -102,16 +103,12 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
       )}
 
       <div className="template__actions">
-        <button 
-          className="button--icon" 
-          onClick={() => onEdit(template)} 
-          title="編集"
-        >
+        <button className="button--icon" onClick={() => onEdit(template)} title="編集">
           <Icons.Edit />
         </button>
-        <button 
-          className="button--icon button--icon--delete" 
-          onClick={() => onDelete(template.id)} 
+        <button
+          className="button--icon button--icon--delete"
+          onClick={() => onDelete(template.id)}
           title="削除"
         >
           <Icons.Delete />

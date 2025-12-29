@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 
 interface DropGapProps {
@@ -18,25 +18,23 @@ const DropGap: React.FC<DropGapProps> = ({
   isActive,
   disabled = false,
 }) => {
-  const id = type === 'template' 
-    ? `gap-${groupId}-${indexOrId}`
-    : `group-gap-${indexOrId}`;
+  const id = type === 'template' ? `gap-${groupId}-${indexOrId}` : `group-gap-${indexOrId}`;
 
   const isDisabled = (type === 'group' && !isDraggingGroup) || disabled;
 
   const { setNodeRef } = useDroppable({
     id,
     data: {
-      type: `${type}-gap`, 
-      groupId: type === 'template' ? groupId : undefined, 
-      indexOrId 
+      type: `${type}-gap`,
+      groupId: type === 'template' ? groupId : undefined,
+      indexOrId,
     },
     disabled: isDisabled,
   });
 
   return (
-    <div 
-      ref={setNodeRef} 
+    <div
+      ref={setNodeRef}
       className={`drop-gap drop-gap--${type} ${isActive ? 'drop-gap--active' : ''}`}
     />
   );

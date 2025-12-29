@@ -1,25 +1,25 @@
 :root {
   --suggest-bg: #ffffff;
-  --suggest-border: #E5E7EB;
+  --suggest-border: #e5e7eb;
   --suggest-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --suggest-scrollbar-thumb: #CBD5DD;
-  --suggest-group-header-color: #898E96;
-  --suggest-item-color: #19234E;
-  --suggest-item-hover-bg: #F2F8FF;
+  --suggest-scrollbar-thumb: #cbd5dd;
+  --suggest-group-header-color: #898e96;
+  --suggest-item-color: #19234e;
+  --suggest-item-hover-bg: #f2f8ff;
   --suggest-item-hover-color: #111827;
-  --suggest-item-keyboard-bg: #DDEEFF;
+  --suggest-item-keyboard-bg: #ddeeff;
 }
 
-:root[theme="dark"] {
-  --suggest-bg: #1F2937;
-  --suggest-border: #4B5563;
+:root[theme='dark'] {
+  --suggest-bg: #1f2937;
+  --suggest-border: #4b5563;
   --suggest-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --suggest-scrollbar-thumb: #6B7280;
-  --suggest-group-header-color: #9CA3AF;
-  --suggest-item-color: #F3F4F6;
+  --suggest-scrollbar-thumb: #6b7280;
+  --suggest-group-header-color: #9ca3af;
+  --suggest-item-color: #f3f4f6;
   --suggest-item-hover-bg: #374151;
   --suggest-item-hover-color: #ffffff;
-  --suggest-item-keyboard-bg: #3B82F6;
+  --suggest-item-keyboard-bg: #3b82f6;
 }
 
 .suggest {
@@ -78,7 +78,7 @@
     cursor: pointer;
     border-bottom: 1px solid var(--suggest-border);
     background-color: var(--suggest-bg);
-    
+
     will-change: background-color;
     contain: layout style paint;
 

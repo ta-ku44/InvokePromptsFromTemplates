@@ -47,7 +47,11 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   const [isEditing, setIsEditing] = useState(startEditing);
   const [editName, setEditName] = useState(group.name);
 
-  const { setNodeRef: setDragRef, attributes, listeners } = useDraggable({
+  const {
+    setNodeRef: setDragRef,
+    attributes,
+    listeners,
+  } = useDraggable({
     id: groupDraggableId ?? `group-${group.id}`,
     data: { type: 'group', groupId: group.id },
   });
@@ -87,9 +91,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   const sortedTemplates = [...templates].sort((a, b) => a.order - b.order);
 
   return (
-    <div
-      className={`group ${isGroupDragging ? 'group--dragging' : ''}`}
-    >
+    <div className={`group ${isGroupDragging ? 'group--dragging' : ''}`}>
       {/* グループヘッダー */}
       <div
         ref={setDragRef}

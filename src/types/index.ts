@@ -1,6 +1,6 @@
 export interface Template {
   id: number;
-  groupId?: number;
+  groupId: number | null;
   name: string;
   content: string;
   order: number;

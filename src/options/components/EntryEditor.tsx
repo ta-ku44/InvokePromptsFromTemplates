@@ -8,12 +8,7 @@ interface TemplateModalProps {
   onClose: () => void;
 }
 
-const TemplateModal: React.FC<TemplateModalProps> = ({
-  template,
-  groupId,
-  onSave,
-  onClose,
-}) => {
+const TemplateModal: React.FC<TemplateModalProps> = ({ template, groupId, onSave, onClose }) => {
   const [name, setName] = useState(template?.name || '');
   const [content, setContent] = useState(template?.content || '');
   const [showError, setShowError] = useState(false);
@@ -34,8 +29,8 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
   };
 
   return (
-    <div 
-      className="modal-overlay" 
+    <div
+      className="modal-overlay"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -73,13 +68,10 @@ const TemplateModal: React.FC<TemplateModalProps> = ({
         </div>
 
         <div className="modal__actions">
-          <button 
-            className="modal__button modal__button--cancel" 
-            onClick={onClose}
-          >
+          <button className="modal__button modal__button--cancel" onClick={onClose}>
             キャンセル
           </button>
-          <button 
+          <button
             className={`modal__button modal__button--save ${isNameEmpty ? 'modal__button--save--disabled' : ''}`}
             onClick={handleSave}
             disabled={isNameEmpty}

@@ -17,11 +17,15 @@ interface ShowSuggestParams {
 }
 
 //* サジェストを表示
-export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestParams): Promise<void> => {
+export const showSuggest = async ({
+  query,
+  curInputEl,
+  onInsert,
+}: ShowSuggestParams): Promise<void> => {
   if (!curInputEl) return;
   const data = await getCachedData();
-  const templates = data.templates.filter(t =>
-    t.name.toLowerCase().includes(query.toLowerCase())
+  const templates = data.templates.filter((t) =>
+    t.name.toLowerCase().includes(query.toLowerCase()),
   );
   if (!templates.length) {
     hideSuggest();
@@ -31,7 +35,7 @@ export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestPa
   if (!rootEl) {
     rootEl = Object.assign(document.createElement('div'), {
       id: 'pt-suggest-root',
-      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden`
+      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden`,
     });
     document.body.appendChild(rootEl);
     root = createRoot(rootEl);
@@ -44,7 +48,7 @@ export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestPa
       inputEl={curInputEl}
       onSelect={onInsert}
       onClose={hideSuggest}
-    />
+    />,
   );
 };
 
@@ -63,19 +67,21 @@ const setPos = (el: HTMLElement) => {
   let left = rect.left;
 
   // キャレット位置からleftを計算
-  if (el instanceof HTMLTextAreaElement) {  // TextAreaの場合
+  if (el instanceof HTMLTextAreaElement) {
+    // TextAreaの場合
     const caret = getCaretCoordinates(el, el.selectionEnd);
     left = caret.left + rect.left;
-  } else if (el instanceof HTMLDivElement) {  // ContentEditableの場合
+  } else if (el instanceof HTMLDivElement) {
+    // ContentEditableの場合
     const sel = window.getSelection();
     if (sel?.rangeCount) {
       const range = sel.getRangeAt(0).cloneRange();
       range.collapse(true);
-      
+
       const tempSpan = document.createElement('span');
       tempSpan.textContent = '\u200B';
       range.insertNode(tempSpan);
-      
+
       left = tempSpan.getBoundingClientRect().left;
       tempSpan.remove();
     } else {
@@ -98,7 +104,7 @@ const getCachedData = async (): Promise<StorageData> => {
   if (cachedData) return cachedData;
   if (cachePromise) return cachePromise;
 
-  cachePromise = loadStoredData().then(data => {
+  cachePromise = loadStoredData().then((data) => {
     cachedData = data;
     cachePromise = null;
     return data;
@@ -134,12 +140,12 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     const map = new Map<number | null, Template[]>();
     const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
 
-    sortedGroups.forEach(g => {
+    sortedGroups.forEach((g) => {
       map.set(g.id, []);
     });
     map.set(null, []);
 
-    templates.forEach(t => {
+    templates.forEach((t) => {
       const id = t.groupId ?? null;
       if (map.has(id)) {
         map.get(id)!.push(t);
@@ -159,13 +165,11 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
 
   // グループ名を取得
   const getGroupName = (id: number | null) =>
-    id === null
-      ? 'other'
-      : groups.find(g => g.id === id)?.name ?? 'other';
+    id === null ? 'other' : (groups.find((g) => g.id === id)?.name ?? 'other');
 
   const flatTemplates = useMemo(() => {
-    return Array.from(groupedData.values()).flatMap(list =>
-      list.slice().sort((a, b) => a.order - b.order)
+    return Array.from(groupedData.values()).flatMap((list) =>
+      list.slice().sort((a, b) => a.order - b.order),
     );
   }, [groupedData]);
 
@@ -225,7 +229,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
         setIsKeyboardMode(true);
         e.preventDefault();
         e.stopPropagation();
-        const idx = flatTemplates.findIndex(t => t.id === keyboardSelectedId);
+        const idx = flatTemplates.findIndex((t) => t.id === keyboardSelectedId);
         if (idx === -1) return;
 
         if (e.key === 'ArrowDown' && idx < flatTemplates.length - 1) {
@@ -240,14 +244,13 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
         setIsKeyboardMode(true);
         e.preventDefault();
         e.stopPropagation();
-        const t = flatTemplates.find(x => x.id === keyboardSelectedId);
+        const t = flatTemplates.find((x) => x.id === keyboardSelectedId);
         if (t) onSelect(t);
       }
     };
 
     window.addEventListener('keydown', onKeyDownCapture, true);
-    return () =>
-      window.removeEventListener('keydown', onKeyDownCapture, true);
+    return () => window.removeEventListener('keydown', onKeyDownCapture, true);
   }, [flatTemplates, keyboardSelectedId, onSelect]);
 
   // 選択項目が中央に来るようスクロール
@@ -296,16 +299,14 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
       <div className="suggest__groupItems" ref={listRef}>
         {Array.from(groupedData.entries()).map(([groupId, list]) => (
           <div key={groupId ?? 'other'}>
-            <div className="suggest__group-header">
-              {getGroupName(groupId)}
-            </div>
+            <div className="suggest__group-header">{getGroupName(groupId)}</div>
             {list
               .slice()
               .sort((a, b) => a.order - b.order)
-              .map(item => (
+              .map((item) => (
                 <div
                   key={item.id}
-                  ref={el => {
+                  ref={(el) => {
                     if (el) itemRefs.current.set(item.id, el);
                     else itemRefs.current.delete(item.id);
                   }}

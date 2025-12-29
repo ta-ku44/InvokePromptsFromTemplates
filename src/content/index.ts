@@ -18,7 +18,11 @@ const init = async () => {
       curInputEl = el;
       inputHandler = new InputHandler(curInputEl, key, (query) => {
         if (query !== null) {
-          showSuggest({query, curInputEl, onInsert: (template) => inputHandler?.insertPrompt(template)});
+          showSuggest({
+            query,
+            curInputEl,
+            onInsert: (template) => inputHandler?.insertPrompt(template),
+          });
         } else {
           hideSuggest();
         }
@@ -28,7 +32,7 @@ const init = async () => {
     onLost: () => {
       console.log('入力欄が削除されたためクリーンアップを実行');
       cleanup();
-    }
+    },
   });
 
   domObserver.start();

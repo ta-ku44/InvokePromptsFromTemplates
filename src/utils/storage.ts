@@ -39,9 +39,7 @@ const saveStoredData = async (data: StorageData): Promise<void> => {
   }
 };
 
-const updateStoredData = async (
-  updater: (data: StorageData) => StorageData
-): Promise<void> => {
+const updateStoredData = async (updater: (data: StorageData) => StorageData): Promise<void> => {
   const data = await loadStoredData();
   const updated = updater(data);
   await saveStoredData(updated);
@@ -56,52 +54,55 @@ const getNextOrder = <T extends { order: number }>(items: T[]): number =>
 
 const reorderItems = <T extends { id: number; order: number }>(
   items: T[],
-  orderedIds: number[]
+  orderedIds: number[],
 ): T[] =>
-  items.map(item => {
+  items.map((item) => {
     const newOrder = orderedIds.indexOf(item.id);
     return newOrder !== -1 ? { ...item, order: newOrder } : item;
   });
 
 //* Template操作
 export const saveTemplates = async (templates: Template[]): Promise<void> => {
-  await updateStoredData(data => ({ ...data, templates }));
+  await updateStoredData((data) => ({ ...data, templates }));
 };
 
-export const addTemplate = async (template: Omit<Template, 'id' | 'order'>): Promise<void> => {
-  await updateStoredData(data => {
-    const groupTemplates = data.templates.filter(t => t.groupId === template.groupId);
+export const addTemplate = async (template: Omit<Template, 'id' | 'order'>): Promise<number> => {
+  let newId = 0;
+  await updateStoredData((data) => {
+    const groupTemplates = data.templates.filter((t) => t.groupId === template.groupId);
+    newId = getNextId(data.templates);
     const newTemplate: Template = {
       ...template,
-      id: getNextId(data.templates),
+      id: newId,
       order: getNextOrder(groupTemplates),
     };
     return { ...data, templates: [...data.templates, newTemplate] };
   });
+  return newId;
 };
 
 export const updateTemplate = async (id: number, updates: Partial<Template>): Promise<void> => {
-  await updateStoredData(data => ({
+  await updateStoredData((data) => ({
     ...data,
-    templates: data.templates.map(t => (t.id === id ? { ...t, ...updates } : t)),
+    templates: data.templates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
   }));
 };
 
 export const deleteTemplate = async (id: number): Promise<void> => {
-  await updateStoredData(data => ({
+  await updateStoredData((data) => ({
     ...data,
-    templates: data.templates.filter(t => t.id !== id),
+    templates: data.templates.filter((t) => t.id !== id),
   }));
 };
 
 export const deleteAllTemplates = async (): Promise<void> => {
-  await updateStoredData(data => ({ ...data, templates: [] }));
+  await updateStoredData((data) => ({ ...data, templates: [] }));
 };
 
 export const reorderTemplates = async (groupId: number, orderedIds: number[]): Promise<void> => {
-  await updateStoredData(data => ({
+  await updateStoredData((data) => ({
     ...data,
-    templates: data.templates.map(t => {
+    templates: data.templates.map((t) => {
       if (t.groupId !== groupId) return t;
       const newOrder = orderedIds.indexOf(t.id);
       return newOrder !== -1 ? { ...t, order: newOrder } : t;
@@ -113,10 +114,10 @@ export const reorderTemplates = async (groupId: number, orderedIds: number[]): P
 const adjustOrderOnMove = (
   template: Template,
   targetId: number,
-  oldGroupId: number | undefined,
+  oldGroupId: number,
   oldOrder: number,
-  newGroupId: number | undefined,
-  newOrder: number
+  newGroupId: number,
+  newOrder: number,
 ): Template => {
   if (template.id === targetId) {
     return { ...template, groupId: newGroupId, order: newOrder };
@@ -147,16 +148,17 @@ const adjustOrderOnMove = (
 
 export const moveTemplateToGroup = async (
   templateId: number,
-  newGroupId: number | undefined,
-  newOrder: number
+  newGroupId: number,
+  newOrder: number,
 ): Promise<void> => {
-  await updateStoredData(data => {
-    const targetTemplate = data.templates.find(t => t.id === templateId);
+  await updateStoredData((data) => {
+    const targetTemplate = data.templates.find((t) => t.id === templateId);
     if (!targetTemplate) return data;
 
     const { groupId: oldGroupId, order: oldOrder } = targetTemplate;
-    const templates = data.templates.map(t =>
-      adjustOrderOnMove(t, templateId, oldGroupId, oldOrder, newGroupId, newOrder)
+    if (oldGroupId === null || oldOrder === null) return data;
+    const templates = data.templates.map((t) =>
+      adjustOrderOnMove(t, templateId, oldGroupId, oldOrder, newGroupId, newOrder),
     );
 
     return { ...data, templates };
@@ -165,7 +167,7 @@ export const moveTemplateToGroup = async (
 
 //* Group操作
 export const saveGroups = async (groups: Group[]): Promise<void> => {
-  await updateStoredData(data => ({ ...data, groups }));
+  await updateStoredData((data) => ({ ...data, groups }));
 };
 
 export const addGroup = async (group: Omit<Group, 'id' | 'order'>): Promise<number> => {
@@ -180,22 +182,22 @@ export const addGroup = async (group: Omit<Group, 'id' | 'order'>): Promise<numb
 };
 
 export const updateGroup = async (id: number, updates: Partial<Group>): Promise<void> => {
-  await updateStoredData(data => ({
+  await updateStoredData((data) => ({
     ...data,
-    groups: data.groups.map(g => (g.id === id ? { ...g, ...updates } : g)),
+    groups: data.groups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
   }));
 };
 
 export const deleteGroup = async (id: number): Promise<void> => {
-  await updateStoredData(data => ({
+  await updateStoredData((data) => ({
     ...data,
-    groups: data.groups.filter(g => g.id !== id),
-    templates: data.templates.filter(t => t.groupId !== id),
+    groups: data.groups.filter((g) => g.id !== id),
+    templates: data.templates.filter((t) => t.groupId !== id),
   }));
 };
 
 export const reorderGroups = async (orderedIds: number[]): Promise<void> => {
-  await updateStoredData(data => ({
+  await updateStoredData((data) => ({
     ...data,
     groups: reorderItems(data.groups, orderedIds),
   }));
@@ -203,14 +205,12 @@ export const reorderGroups = async (orderedIds: number[]): Promise<void> => {
 
 export const getTemplatesByGroup = async (groupId: number): Promise<Template[]> => {
   const data = await loadStoredData();
-  return data.templates
-    .filter(t => t.groupId === groupId)
-    .sort((a, b) => a.order - b.order);
+  return data.templates.filter((t) => t.groupId === groupId).sort((a, b) => a.order - b.order);
 };
 
 //* ショートカットキー操作
 export const saveShortcutKey = async (shortcutKey: string): Promise<void> => {
-  await updateStoredData(data => ({ ...data, shortcutKey }));
+  await updateStoredData((data) => ({ ...data, shortcutKey }));
 };
 
 export const loadShortcutKey = async (): Promise<string> => {

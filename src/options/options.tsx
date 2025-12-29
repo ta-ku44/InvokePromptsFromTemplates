@@ -43,7 +43,7 @@ const Options: React.FC = () => {
     closeModal,
     startEditingGroup,
     finishEditingGroup,
-  } = useUIState(groups.map(g => g.id));
+  } = useUIState(groups.map((g) => g.id));
 
   const {
     sensors,
@@ -74,9 +74,7 @@ const Options: React.FC = () => {
     startEditingGroup(newGroupId);
   };
 
-  const handleSaveTemplate = async (
-    templateData: Partial<Template> & { groupId: number }
-  ) => {
+  const handleSaveTemplate = async (templateData: Partial<Template> & { groupId: number }) => {
     if (templateData.id) {
       await updateTemplate(templateData.id, {
         name: templateData.name,
@@ -129,7 +127,7 @@ const Options: React.FC = () => {
                     isActive={activeGroupGapId === `group-gap-${idx}`}
                     isDraggingGroup={activeGroupId !== null}
                   />
-                  
+
                   <GroupItem
                     group={group}
                     templates={getTemplatesForGroup(group.id)}

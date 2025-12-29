@@ -413,7 +413,10 @@ body {
     margin: 0;
     opacity: 0;
     pointer-events: none;
-    transition: height 0.15s ease-out, margin 0.15s ease-out, opacity 0.15s ease-out;
+    transition:
+      height 0.15s ease-out,
+      margin 0.15s ease-out,
+      opacity 0.15s ease-out;
 
     &.drop-gap--active {
       height: 60px;
