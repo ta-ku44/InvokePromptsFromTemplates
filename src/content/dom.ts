@@ -15,12 +15,7 @@ export class DomObserver {
 
     this.observer = new MutationObserver(() => {
       // 既に入力欄を取得していてかつ、まだDOMに存在している場合
-      if (
-        this.curTextArea &&
-        document.body.contains(this.curTextArea) &&
-        this.isValidInput(this.curTextArea)
-      )
-        return;
+      if (this.curTextArea && document.body.contains(this.curTextArea) && this.isValidInput(this.curTextArea)) return;
       // 既に取得していた入力欄がDOMから削除されていた場合
       if (this.curTextArea && !document.body.contains(this.curTextArea)) {
         console.log('現在の入力欄がDOMから削除された');

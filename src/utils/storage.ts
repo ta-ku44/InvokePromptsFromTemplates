@@ -52,10 +52,7 @@ const getNextId = <T extends { id: number }>(items: T[]): number =>
 const getNextOrder = <T extends { order: number }>(items: T[]): number =>
   items.reduce((max, item) => Math.max(max, item.order), 0) + 1;
 
-const reorderItems = <T extends { id: number; order: number }>(
-  items: T[],
-  orderedIds: number[],
-): T[] =>
+const reorderItems = <T extends { id: number; order: number }>(items: T[], orderedIds: number[]): T[] =>
   items.map((item) => {
     const newOrder = orderedIds.indexOf(item.id);
     return newOrder !== -1 ? { ...item, order: newOrder } : item;
@@ -146,11 +143,7 @@ const adjustOrderOnMove = (
   return template;
 };
 
-export const moveTemplateToGroup = async (
-  templateId: number,
-  newGroupId: number,
-  newOrder: number,
-): Promise<void> => {
+export const moveTemplateToGroup = async (templateId: number, newGroupId: number, newOrder: number): Promise<void> => {
   await updateStoredData((data) => {
     const targetTemplate = data.templates.find((t) => t.id === templateId);
     if (!targetTemplate) return data;

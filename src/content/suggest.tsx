@@ -17,16 +17,10 @@ interface ShowSuggestParams {
 }
 
 //* サジェストを表示
-export const showSuggest = async ({
-  query,
-  curInputEl,
-  onInsert,
-}: ShowSuggestParams): Promise<void> => {
+export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestParams): Promise<void> => {
   if (!curInputEl) return;
   const data = await getCachedData();
-  const templates = data.templates.filter((t) =>
-    t.name.toLowerCase().includes(query.toLowerCase()),
-  );
+  const templates = data.templates.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
   if (!templates.length) {
     hideSuggest();
     return;
@@ -94,9 +88,7 @@ const setPos = (el: HTMLElement) => {
   const height = rootEl.offsetHeight;
 
   rootEl.style.left = `${window.scrollX + left}px`;
-  rootEl.style.top = showAbove
-    ? `${window.scrollY + rect.top - height - 15}px`
-    : `${window.scrollY + rect.bottom}px`;
+  rootEl.style.top = showAbove ? `${window.scrollY + rect.top - height - 15}px` : `${window.scrollY + rect.bottom}px`;
 };
 
 //* キャッシュデータを取得
@@ -168,9 +160,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     id === null ? 'other' : (groups.find((g) => g.id === id)?.name ?? 'other');
 
   const flatTemplates = useMemo(() => {
-    return Array.from(groupedData.values()).flatMap((list) =>
-      list.slice().sort((a, b) => a.order - b.order),
-    );
+    return Array.from(groupedData.values()).flatMap((list) => list.slice().sort((a, b) => a.order - b.order));
   }, [groupedData]);
 
   useEffect(() => {
@@ -207,8 +197,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     const close = (e: MouseEvent | KeyboardEvent) => {
       if (
         suggestRef.current &&
-        (!suggestRef.current.contains(e.target as Node) ||
-          (e instanceof KeyboardEvent && e.key === 'Escape'))
+        (!suggestRef.current.contains(e.target as Node) || (e instanceof KeyboardEvent && e.key === 'Escape'))
       ) {
         onClose();
       }

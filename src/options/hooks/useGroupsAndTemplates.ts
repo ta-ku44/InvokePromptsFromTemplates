@@ -161,11 +161,7 @@ export const useGroupsAndTemplates = () => {
     }
   };
 
-  const moveTemplateToGroup = async (
-    templateId: number,
-    targetGroupId: number,
-    targetIndex: number,
-  ) => {
+  const moveTemplateToGroup = async (templateId: number, targetGroupId: number, targetIndex: number) => {
     const prevTemplates = templates;
 
     // 楽観的更新は useDragAndDrop で既に実行済み

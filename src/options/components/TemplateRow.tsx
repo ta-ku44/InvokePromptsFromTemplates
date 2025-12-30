@@ -106,11 +106,7 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
         <button className="button--icon" onClick={() => onEdit(template)} title="編集">
           <Icons.Edit />
         </button>
-        <button
-          className="button--icon button--icon--delete"
-          onClick={() => onDelete(template.id)}
-          title="削除"
-        >
+        <button className="button--icon button--icon--delete" onClick={() => onDelete(template.id)} title="削除">
           <Icons.Delete />
         </button>
       </div>

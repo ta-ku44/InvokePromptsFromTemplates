@@ -32,12 +32,7 @@ const DropGap: React.FC<DropGapProps> = ({
     disabled: isDisabled,
   });
 
-  return (
-    <div
-      ref={setNodeRef}
-      className={`drop-gap drop-gap--${type} ${isActive ? 'drop-gap--active' : ''}`}
-    />
-  );
+  return <div ref={setNodeRef} className={`drop-gap drop-gap--${type} ${isActive ? 'drop-gap--active' : ''}`} />;
 };
 
 export default DropGap;

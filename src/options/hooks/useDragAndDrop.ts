@@ -12,11 +12,7 @@ interface UseDragAndDropProps {
   setGroups: React.Dispatch<React.SetStateAction<Group[]>>;
   setTemplates: React.Dispatch<React.SetStateAction<Template[]>>;
   reorderGroups: (groupIds: number[]) => Promise<void>;
-  moveTemplateToGroup: (
-    templateId: number,
-    targetGroupId: number,
-    targetIndex: number,
-  ) => Promise<void>;
+  moveTemplateToGroup: (templateId: number, targetGroupId: number, targetIndex: number) => Promise<void>;
   reorderTemplates: (groupId: number, templateIds: number[]) => Promise<void>;
 }
 
@@ -114,12 +110,7 @@ export const useDragAndDrop = ({
         const overTemplate = templates.find((t) => t.id === tid);
 
         // groupId が null のテンプレートは移動不可
-        if (
-          overTemplate &&
-          overTemplate.groupId !== null &&
-          activatorEvent &&
-          'clientY' in activatorEvent
-        ) {
+        if (overTemplate && overTemplate.groupId !== null && activatorEvent && 'clientY' in activatorEvent) {
           // DOM要素から位置情報を取得
           const overElement = document.querySelector(`[data-template-id="${tid}"]`);
 
@@ -313,14 +304,12 @@ export const useDragAndDrop = ({
       await moveTemplateToGroup(activeTemplateId, targetGroupId, targetIndex);
     } else {
       // 同じグループ内での並び替え
-      const groupTemplates = templates
-        .filter((t) => t.groupId === targetGroupId)
-        .sort((a, b) => a.order - b.order);
+      const groupTemplates = templates.filter((t) => t.groupId === targetGroupId).sort((a, b) => a.order - b.order);
 
       const oldIndex = groupTemplates.findIndex((t) => t.id === activeTemplateId);
 
-      // ドラッグ中は要素が元の位置に残るため、後方へ移動する場合は「ドラッグ中の配列基準」の targetIndex を
-      // 1 減らして補正し、その値を newIndex として並び替える必要がある。
+      // ドラッグ中は要素が元の位置に残るため、後方へ移動する場合は「ドラッグ中の配列基準」の targetIndex を 1 減らして補正し、
+      // その値を newIndex として並び替える必要がある。
       const newIndex = oldIndex < targetIndex ? targetIndex - 1 : targetIndex;
 
       if (oldIndex !== newIndex) {

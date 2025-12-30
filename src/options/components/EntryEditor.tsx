@@ -53,18 +53,12 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, groupId, onSave
             }}
             placeholder="テンプレート名を入力"
           />
-          {showError && isNameEmpty && (
-            <span className="modal__field-error">テンプレート名は必須です</span>
-          )}
+          {showError && isNameEmpty && <span className="modal__field-error">テンプレート名は必須です</span>}
         </div>
 
         <div className="modal__field">
           <label>内容</label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="プロンプトの内容を入力"
-          />
+          <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="プロンプトの内容を入力" />
         </div>
 
         <div className="modal__actions">

@@ -20,25 +20,25 @@ export const useUIState = (groupIds: number[]) => {
       return;
     }
 
-    // 2回目以降: 新規追加されたグループのみ展開
+    // 以降: 新規追加されたグループのみ展開
     if (initializedRef.current) {
       const prevIds = new Set(prevGroupIdsRef.current);
-      const newGroupIds = groupIds.filter(id => !prevIds.has(id));
-      
+      const newGroupIds = groupIds.filter((id) => !prevIds.has(id));
+
       if (newGroupIds.length > 0) {
-        setExpandedGroups(prev => {
+        setExpandedGroups((prev) => {
           const next = new Set(prev);
-          newGroupIds.forEach(id => next.add(id));
+          newGroupIds.forEach((id) => next.add(id));
           return next;
         });
       }
 
       // 削除されたグループは展開状態から除外
       const currentIds = new Set(groupIds);
-      setExpandedGroups(prev => {
+      setExpandedGroups((prev) => {
         const next = new Set(prev);
         let changed = false;
-        prev.forEach(id => {
+        prev.forEach((id) => {
           if (!currentIds.has(id)) {
             next.delete(id);
             changed = true;
@@ -52,7 +52,7 @@ export const useUIState = (groupIds: number[]) => {
   }, [groupIds]);
 
   const toggleGroup = (groupId: number) => {
-    setExpandedGroups(prev => {
+    setExpandedGroups((prev) => {
       const next = new Set(prev);
       next.has(groupId) ? next.delete(groupId) : next.add(groupId);
       return next;

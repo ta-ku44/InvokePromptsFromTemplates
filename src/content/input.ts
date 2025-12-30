@@ -1,4 +1,13 @@
 import type { Template } from '../types';
+declare global {
+  interface Element {
+    __lexicalEditor?: any;
+    __tiptapEditor?: any;
+  }
+  interface Window {
+    Lexical?: any;
+  }
+}
 
 export class InputHandler {
   private inputElement: HTMLElement;
@@ -6,11 +15,7 @@ export class InputHandler {
   private cachedRegex: RegExp | null = null;
   private onQueryChange: (query: string | null) => void;
 
-  constructor(
-    inputElement: HTMLElement,
-    key: string,
-    onQueryChange: (query: string | null) => void,
-  ) {
+  constructor(inputElement: HTMLElement, key: string, onQueryChange: (query: string | null) => void) {
     this.inputElement = inputElement;
     this.key = key;
     this.onQueryChange = onQueryChange;
@@ -60,9 +65,7 @@ export class InputHandler {
 
   //* テキスト内容を取得
   private getTextContent(): string {
-    return this.inputElement instanceof HTMLTextAreaElement
-      ? this.inputElement.value
-      : this.inputElement.innerText;
+    return this.inputElement instanceof HTMLTextAreaElement ? this.inputElement.value : this.inputElement.innerText;
   }
 
   //* 正規表現を取得
@@ -120,16 +123,38 @@ export class InputHandler {
   }
 
   //* Lexicalで挿入
-  private insertIntoLexical = (el: HTMLDivElement, text: string): boolean => {
+  private insertIntoLexical(el: HTMLDivElement, text: string): boolean {
     try {
-      console.log('Lexicalに挿入', el, text);
-      // TODO: Lexicalの挿入方法を調査・実装
+      el.focus();
+      //const newText = this.replaceMatchesWithContent(el.innerText, text);
+      const selection = window.getSelection();
+      if (!selection) return false;
+
+      selection.removeAllRanges();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      selection.addRange(range);
+
+      // beforeinput → input
+      el.dispatchEvent(new InputEvent('beforeinput', {
+        inputType: 'insertText',
+        data: text,
+        bubbles: true,
+        cancelable: true,
+      }));
+
+      el.dispatchEvent(new InputEvent('input', {
+        inputType: 'insertText',
+        data: text,
+        bubbles: true,
+      }));
       return true;
     } catch (error) {
-      console.log('Lexicalの挿入に失敗:', error);
+      console.error('Lexical の挿入に失敗:', error);
       return false;
     }
-  };
+  }
 
   //* エディタータイプを返す
   private detectEditorType(el: HTMLDivElement): 'lexical' | 'prosemirror' | 'standard' {
@@ -152,11 +177,7 @@ export class InputHandler {
     if (!el.classList.contains('ProseMirror')) return 'unknown';
 
     // tiptap判定
-    if (
-      (el as any).__tiptapEditor ||
-      el.closest('.tiptap') ||
-      el.closest("[data-editor='tiptap']")
-    ) {
+    if ((el as any).__tiptapEditor || el.closest('.tiptap') || el.closest("[data-editor='tiptap']")) {
       return 'tiptap';
     }
     // 要素内になければProseMirrorと判定
@@ -167,6 +188,7 @@ export class InputHandler {
   private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
     if (!text) return false;
     try {
+      //const newText = this.replaceMatchesWithContent(el.innerText, text);
       this.moveCursorToEnd(el);
       const success = document.execCommand('insertText', false, text);
       if (success) el.dispatchEvent(new InputEvent('input', { bubbles: true }));
