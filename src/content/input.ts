@@ -136,19 +136,22 @@ export class InputHandler {
       range.collapse(false);
       selection.addRange(range);
 
-      // beforeinput → input
-      el.dispatchEvent(new InputEvent('beforeinput', {
-        inputType: 'insertText',
-        data: text,
-        bubbles: true,
-        cancelable: true,
-      }));
+      el.dispatchEvent(
+        new InputEvent('beforeinput', {
+          inputType: 'insertText',
+          data: text,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
 
-      el.dispatchEvent(new InputEvent('input', {
-        inputType: 'insertText',
-        data: text,
-        bubbles: true,
-      }));
+      el.dispatchEvent(
+        new InputEvent('input', {
+          inputType: 'insertText',
+          data: text,
+          bubbles: true,
+        }),
+      );
       return true;
     } catch (error) {
       console.error('Lexical の挿入に失敗:', error);

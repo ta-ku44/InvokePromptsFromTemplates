@@ -10,15 +10,14 @@ let rootEl: HTMLElement | null = null;
 let cachedData: StorageData | null = null;
 let cachePromise: Promise<StorageData> | null = null;
 
-interface ShowSuggestParams {
-  query: string;
-  curInputEl: HTMLElement | null;
-  onInsert: (template: Template) => void;
-}
-
 //* サジェストを表示
-export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestParams): Promise<void> => {
+export const showSuggest = async (
+  curInputEl: HTMLElement,
+  query: string,
+  onInsert: (template: Template) => void,
+): Promise<void> => {
   if (!curInputEl) return;
+  
   const data = await getCachedData();
   const templates = data.templates.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
   if (!templates.length) {
@@ -106,7 +105,7 @@ const getCachedData = async (): Promise<StorageData> => {
 };
 
 //* キャッシュをクリア
-export const clearSuggestCache = () => {
+export const clearCachedData = () => {
   cachedData = null;
 };
 
