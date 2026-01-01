@@ -1,10 +1,10 @@
 import { DomObserver } from './dom.ts';
-import { InputHandler } from './input.ts';
+import { InputProcessor } from './input.ts';
 import { showSuggest, hideSuggest, clearCachedData } from './suggest.tsx';
 import browser from 'webextension-polyfill';
 
 let key = '#';
-let inputHandler: InputHandler | null = null;
+let inputProcessor: InputProcessor | null = null;
 let curInputEl: HTMLElement | null = null;
 
 const init = async () => {
@@ -14,7 +14,7 @@ const init = async () => {
     onFound: setup,
     onLost: cleanup,
   });
-  
+
   domObserver.start();
 
   window.addEventListener('beforeunload', () => {
@@ -27,20 +27,20 @@ const setup = (el: HTMLElement) => {
   if (curInputEl === el) return;
   cleanup();
   curInputEl = el;
-  inputHandler = new InputHandler(curInputEl, key, (query) => {
+  inputProcessor = new InputProcessor(curInputEl, key, (query) => {
     if (query !== null) {
-      showSuggest(curInputEl!, query, (template) => inputHandler?.insertPrompt(template));
+      showSuggest(curInputEl!, query, (template) => inputProcessor?.insertPrompt(template.content));
     } else {
       hideSuggest();
     }
   });
-  curInputEl.addEventListener('input', inputHandler.handleInput);
+  curInputEl.addEventListener('input', inputProcessor.getInputStatus);
 };
 
 const cleanup = () => {
-  if (curInputEl && inputHandler) curInputEl.removeEventListener('input', inputHandler.handleInput);
+  if (curInputEl && inputProcessor) curInputEl.removeEventListener('input', inputProcessor.getInputStatus);
   hideSuggest();
-  inputHandler = null;
+  inputProcessor = null;
   curInputEl = null;
 };
 
@@ -48,8 +48,8 @@ const loadKey = async () => {
   const result = await browser.storage.sync.get('data');
   key = (result.data as { shortcutKey: string }).shortcutKey || '#';
 
-  if (inputHandler) {
-    inputHandler.updateKey(key);
+  if (inputProcessor) {
+    inputProcessor.updateKey(key);
   }
 };
 
@@ -60,8 +60,8 @@ browser.storage.onChanged.addListener((changes, area) => {
     const newKey = (changes.data.newValue as { shortcutKey: string })?.shortcutKey;
     if (typeof newKey === 'string') {
       key = newKey;
-      if (inputHandler) {
-        inputHandler.updateKey(key);
+      if (inputProcessor) {
+        inputProcessor.updateKey(key);
       }
     }
   }

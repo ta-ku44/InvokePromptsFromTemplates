@@ -1,5 +1,5 @@
 export class DomObserver {
-  private curEl: HTMLElement | null = null;
+  private curInputEl: HTMLElement | null = null;
   private observer: MutationObserver | null = null;
   private onFound: (el: HTMLElement) => void;
   private onLost?: () => void;
@@ -14,13 +14,13 @@ export class DomObserver {
 
     this.observer = new MutationObserver(() => {
       // 既に入力欄を取得していてかつ、まだDOMに存在している場合
-      if (this.curEl && document.body.contains(this.curEl) && this.isValidInput(this.curEl)) return;
+      if (this.curInputEl && document.body.contains(this.curInputEl) && this.isValidInput(this.curInputEl)) return;
       // 既に取得していた入力欄がDOMから削除されていた場合
-      if (this.curEl && !document.body.contains(this.curEl)) {
-        this.curEl = null;
+      if (this.curInputEl && !document.body.contains(this.curInputEl)) {
+        this.curInputEl = null;
         this.onLost?.();
       }
-      this.assignTextArea();
+      this.assignInputElement();
     });
     this.observer.observe(document.body, { childList: true, subtree: true });
   };
@@ -30,22 +30,22 @@ export class DomObserver {
       this.observer.disconnect();
       this.observer = null;
     }
-    this.curEl = null;
+    this.curInputEl = null;
   };
 
-  private assignTextArea = async (): Promise<void> => {
-    const foundEl = this.findHTMLElement();
+  private assignInputElement = async (): Promise<void> => {
+    const foundInputEl = this.findInputElement();
 
-    if (foundEl && foundEl !== this.curEl) {
-      this.curEl = foundEl;
-      this.onFound(foundEl);
-    } else if (!foundEl) {
+    if (foundInputEl && foundInputEl !== this.curInputEl) {
+      this.curInputEl = foundInputEl;
+      this.onFound(foundInputEl);
+    } else if (!foundInputEl) {
       console.log('有効な入力欄が見つかりませんでした');
     }
   };
 
-  //* テキストエリアまたはコンテンツエディタブル要素を検索
-  private findHTMLElement = (): HTMLElement | null => {
+  //* テキストエリアまたはコンテンツエディタブル要素を探索
+  private findInputElement = (): HTMLElement | null => {
     const selectors =[
       '[contenteditable="true"]',
       'textarea:not([disabled]):not([readonly])'
@@ -62,15 +62,15 @@ export class DomObserver {
   };
 
   //* 要素が有効な入力欄かどうかを判定
-  private isValidInput = (element: HTMLElement): boolean => {
-    if (!element || !element.isConnected) return false;
+  private isValidInput = (el: HTMLElement): boolean => {
+    if (!el || !el.isConnected) return false;
 
-    const style = window.getComputedStyle(element);
-    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
     return (
       style.display !== 'none' &&
       style.visibility !== 'hidden' &&
-      element.offsetParent !== null &&
+      el.offsetParent !== null &&
       rect.width > 0 &&
       rect.height > 0
     );

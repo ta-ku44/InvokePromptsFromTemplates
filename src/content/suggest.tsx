@@ -17,7 +17,7 @@ export const showSuggest = async (
   onInsert: (template: Template) => void,
 ): Promise<void> => {
   if (!curInputEl) return;
-  
+
   const data = await getCachedData();
   const templates = data.templates.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
   if (!templates.length) {
@@ -28,8 +28,9 @@ export const showSuggest = async (
   if (!rootEl) {
     rootEl = Object.assign(document.createElement('div'), {
       id: 'pt-suggest-root',
-      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden`,
+      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden;`,
     });
+
     document.body.appendChild(rootEl);
     root = createRoot(rootEl);
   }
@@ -53,8 +54,8 @@ export const hideSuggest = () => {
   rootEl = null;
 };
 
-//* サジェストの位置を設定
-const setPos = (el: HTMLElement) => {
+//* サジェストの位置を入力欄に合わせて調整
+const adjustPosition = (el: HTMLElement) => {
   if (!rootEl) return;
   const rect = el.getBoundingClientRect();
   let left = rect.left;
@@ -171,7 +172,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
 
   // 位置を設定
   useLayoutEffect(() => {
-    setPos(inputEl);
+    adjustPosition(inputEl);
     if (rootEl) {
       rootEl.style.visibility = 'visible';
     }
@@ -179,7 +180,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
 
   // リサイズ・スクロール時に位置を更新
   useEffect(() => {
-    const update = () => setPos(inputEl);
+    const update = () => adjustPosition(inputEl);
     const ro = new ResizeObserver(update);
     ro.observe(inputEl);
     window.addEventListener('resize', update);
@@ -209,7 +210,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     };
   }, [onClose]);
 
-  // 選択している項目の管理
+  // キーボードのセレクト操作
   useEffect(() => {
     const onKeyDownCapture = (e: KeyboardEvent) => {
       if (!flatTemplates.length || keyboardSelectedId == null) return;
