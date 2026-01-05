@@ -1,16 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&display=swap');
 
 :root {
-  --bg-primary: #262624;
-  --bg-secondary: #1e1e1c;
-  --bg-tertiary: #3a3a38;
-  --text-primary: #c2c0b6;
-  --text-secondary: #8a8880;
+  --bg-primary: #12212C;
+  --bg-secondary: #16273A;
+  --bg-tertiary: #1C3244;
+  --bg-quaternary: #0D1B26;
+  --text-primary: #F7F7F8;
+  --text-secondary: #8799A5;
   --accent-color: #4a9eff;
-  --accent-hover: #3a8eef;
+  --accent-hover: #3B8BE5;
   --danger-color: #ff6b6b;
-  --danger-hover: #ff5252;
-  --border-color: #3a3a38;
+  --danger-hover: #e85555;
+  --border-color: #1F2E3F;
+  
   --border-radius: 8px;
 }
 
@@ -220,6 +222,10 @@ body {
   user-select: none;
   transition: background-color 0.2s;
 
+  .category--expanded & {
+    border-bottom: 1px solid var(--border-color);
+  }
+
   &:active {
     cursor: grabbing;
   }
@@ -266,7 +272,7 @@ body {
 }
 
 .category__templates {
-  padding: 8px 16px 16px 32px;
+  padding: 8px 16px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -281,9 +287,10 @@ body {
   padding: 8px 12px;
   background-color: var(--bg-tertiary);
   border-radius: 6px;
+  border: 1px solid var(--border-color);
 
   &:hover {
-    background-color: #454543;
+    background-color: var(--bg-quaternary);
   }
 
   &--dragging {

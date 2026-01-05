@@ -97,7 +97,9 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
   const sortedTemplates = [...templates].sort((a, b) => a.order - b.order);
 
   return (
-    <div className={`category ${isCategoryDragging ? 'category--dragging' : ''}`}>
+    <div
+      className={`category ${isCategoryDragging ? 'category--dragging' : ''} ${isExpanded ? 'category--expanded' : ''}`}
+    >
       {/* カテゴリヘッダー */}
       <div
         ref={setDragRef}
