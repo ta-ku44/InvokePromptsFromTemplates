@@ -16,18 +16,10 @@
         "https://gemini.google.com/*",
         "https://notebooklm.google.com/*",
         "https://claude.ai/*",
-        "https://*.perplexity.ai/*",
-
-        "https://*.notion.so/*",
-        "https://*.notion.com/*",
-        "https://*.notion.site/*",
-
         "https://grok.com/*",
         "https://*.x.ai/*",
         "https://x.com/i/grok*",
         "https://*.deepseek.com/*",
-        "https://ai.com/*",
-
         "https://*.github.com/*",
         "https://*.cloud.microsoft/*",
         "https://copilot.microsoft.com/*"

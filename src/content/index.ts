@@ -3,8 +3,8 @@ import { InputProcessor } from './input.ts';
 import { showSuggest, hideSuggest, clearCachedData } from './suggest.tsx';
 import browser from 'webextension-polyfill';
 
-let key = '#';
 let inputProcessor: InputProcessor | null = null;
+let key = '#';
 let curInputEl: HTMLElement | null = null;
 
 const init = async () => {
