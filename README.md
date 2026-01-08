@@ -1,7 +1,7 @@
 # Prompt Library
 
-ChatGPT、Claude、Gemini などの生成 AI で使うプロンプトを容易に管理・再利用できるブラウザ拡張機能です。  
-入力欄でコマンドトリガー（デフォルト: `#`）を入力すると、保存済みのプロンプトがサジェスト表示され、すぐに挿入できます。
+一般的に使用されている生成AI（ChatGPT、Gemini、Claude、Grok 等のLLM）で頻繁に使用するプロンプトを、効率的に再利用するためのブラウザ拡張機能です。
+サイト内の入力欄にコマンドトリガー（デフォルト：`#`）を入力すると、プロンプト一覧がサジェスト表示され、選択したプロンプトが即座に挿入されます。
 
 ## 主な機能
 
@@ -13,7 +13,7 @@ ChatGPT、Claude、Gemini などの生成 AI で使うプロンプトを容易�
 
 ### Chrome ウェブストア経由
 
-1. [TODO: リンクを書き込む](#) にアクセス
+1. [Prompt Library - Chrome ウェブストア](#) にアクセス
 2. 「ブラウザに追加」をクリック
 3. 拡張機能アイコンから設定を開き、テンプレートを作成
 
@@ -44,17 +44,17 @@ ChatGPT、Claude、Gemini などの生成 AI で使うプロンプトを容易�
 
 ## 対応サイト
 
-| サービス名 |
-| ---- |
-| ChatGPT |
-| Claude |
-| Gemini |
-| NotebookLM |
-| Grok |
-| Copilot |
-| Github Copilot |
-| Genspark |
-| DeepSeek |
+| サイト名 | URL |
+| ---- | ---- |
+| ChatGPT | https://chatgpt.com/ |
+| Gemini | https://gemini.google.com/ |
+| NotebookLM | https://notebooklm.google.com/ |
+| Claude | https://claude.ai/ |
+| Grok | https://grok.com/ |
+| Copilot | https://copilot.microsoft.com/ |
+| Github Copilot | https://copilot.github.com/ |
+| Genspark | https://genspark.ai/ |
+| DeepSeek | https://chat.deepseek.com/ |
 
 ### 現在未対応
 
@@ -64,4 +64,4 @@ ChatGPT、Claude、Gemini などの生成 AI で使うプロンプトを容易�
 
 ## フィードバック・問題報告
 
-不具合や機能要望は [https://github.com/ta-ku44/PromptLibrary/issues] までお願いします。
+不具合や機能要望は [GitHub Issues](https://github.com/ta-ku44/PromptLibrary/issues) までお願いします。
