@@ -23,19 +23,8 @@ export const loadStoredData = async (): Promise<StorageData> => {
     const result = await browser.storage.sync.get('data');
     const data = result.data as any;
 
-    // 下位互換性: 古いgroupsをcategoriesに変換
-    if (data && data.groups && !data.categories) {
-      data.categories = data.groups;
-      delete data.groups;
-    }
-
-    // 下位互換性: 古いgroupIdをcategoryIdに変換
     if (data && data.templates) {
       data.templates = data.templates.map((t: any) => {
-        if ('groupId' in t && !('categoryId' in t)) {
-          const { groupId, ...rest } = t;
-          return { ...rest, categoryId: groupId };
-        }
         return t;
       });
     }
@@ -132,7 +121,7 @@ const adjustOrderOnMove = (
   oldCategoryId: number | null,
   oldOrder: number,
   newCategoryId: number | null,
-  newOrder: number,
+  newOrder: number
 ): Template => {
   if (template.id === targetId) {
     return { ...template, categoryId: newCategoryId, order: newOrder };
@@ -164,7 +153,7 @@ const adjustOrderOnMove = (
 export const moveTemplateToCategory = async (
   templateId: number,
   newCategoryId: number | null,
-  newOrder: number,
+  newOrder: number
 ): Promise<void> => {
   await updateStoredData((data) => {
     const targetTemplate = data.templates.find((t) => t.id === templateId);
@@ -173,7 +162,7 @@ export const moveTemplateToCategory = async (
     const { categoryId: oldCategoryId, order: oldOrder } = targetTemplate;
     if (oldOrder === null) return data;
     const templates = data.templates.map((t) =>
-      adjustOrderOnMove(t, templateId, oldCategoryId, oldOrder, newCategoryId, newOrder),
+      adjustOrderOnMove(t, templateId, oldCategoryId, oldOrder, newCategoryId, newOrder)
     );
 
     return { ...data, templates };
