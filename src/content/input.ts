@@ -53,6 +53,9 @@ export class InputProcessor {
       return;
     }
 
+    requestAnimationFrame(() => {
+      this.placeholder(prompt);
+    });
     inputBox.focus();
   }
 
@@ -179,6 +182,17 @@ export class InputProcessor {
       selection.addRange(range);
     } catch (error) {
       console.warn('Failed to move cursor:', error);
+    }
+  }
+
+  private placeholder(prompt: string): void {
+    const match = prompt.match(/\{\{(\w+)\}\}/);
+    if (!match) return;
+
+    if (match.length == 1) {
+      // TODO: 変数を削除しその位置にフォーカス
+    } else {
+      // TODO: モーダルを描画して変数選択
     }
   }
 }
