@@ -191,9 +191,25 @@ export class InputProcessor {
 
     if (match.length == 1) {
       // TODO: 変数を削除しその位置にフォーカス
+      const deletedLength = this.deleteVariable(match);
+      this.moveToVariable(deletedLength);
+
     } else {
       // TODO: モーダルを描画して変数選択
+      this.viewModel(match);
     }
+  }
+
+  private deleteVariable(match: RegExpMatchArray): number {
+    return 0;
+  }
+
+  private moveToVariable(deletedLength: number): void {
+
+  }
+
+  private viewModel(match: RegExpMatchArray): void {
+
   }
 }
 
