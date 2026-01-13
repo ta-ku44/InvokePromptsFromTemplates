@@ -1,13 +1,13 @@
-import { DomObserver } from './dom.ts';
-import { InputProcessor } from './input.ts';
-import { showSuggest, hideSuggest, clearCachedData } from './suggest.tsx';
+import { DomObserver } from './core/dom.ts';
+import { InputProcessor } from './core/input.ts';
+import { showSuggest, hideSuggest, clearCachedData } from './ui/suggest.tsx';
 import browser from 'webextension-polyfill';
 
 let inputProcessor: InputProcessor | null = null;
 let key = '#';
 let curInputBox: HTMLElement | null = null;
 
-const init = async () => {
+async function init() {
   await loadKey();
 
   const domObserver = new DomObserver({
@@ -21,9 +21,9 @@ const init = async () => {
     domObserver.stop();
     cleanup();
   });
-};
+}
 
-const setup = (el: HTMLElement) => {
+function setup(el: HTMLElement): void {
   if (curInputBox === el) return;
   cleanup();
   curInputBox = el;
@@ -34,17 +34,17 @@ const setup = (el: HTMLElement) => {
       hideSuggest();
     }
   });
-  curInputBox.addEventListener('input', inputProcessor.getInputStatus);
-};
+  curInputBox.addEventListener('input', inputProcessor.readInputContent);
+}
 
-const cleanup = () => {
-  if (curInputBox && inputProcessor) curInputBox.removeEventListener('input', inputProcessor.getInputStatus);
+function cleanup(): void {
+  if (curInputBox && inputProcessor) curInputBox.removeEventListener('input', inputProcessor.readInputContent);
   hideSuggest();
   inputProcessor = null;
   curInputBox = null;
-};
+}
 
-const loadKey = async () => {
+async function loadKey(): Promise<void> {
   const result = await browser.storage.sync.get('data');
   key = (result.data as { shortcutKey: string }).shortcutKey || '#';
 

@@ -9,7 +9,7 @@ export class DomObserver {
     this.onLost = opts.onLost;
   }
 
-  public start = () => {
+  public start() {
     if (this.observer) this.observer.disconnect();
 
     this.observer = new MutationObserver(() => {
@@ -22,19 +22,19 @@ export class DomObserver {
       }
       this.assignInputBox();
     });
-    
-    this.observer.observe(document.body, { childList: true, subtree: true });
-  };
 
-  public stop = () => {
+    this.observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  public stop() {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
     }
     this.curInputBox = null;
-  };
+  }
 
-  private assignInputBox = async (): Promise<void> => {
+  private assignInputBox() {
     const foundInputBox = this.findInputBox();
 
     if (foundInputBox && foundInputBox !== this.curInputBox) {
@@ -43,14 +43,11 @@ export class DomObserver {
     } else if (!foundInputBox) {
       console.log('有効な入力欄が見つかりませんでした');
     }
-  };
+  }
 
   //* テキストエリアまたはコンテンツエディタブル要素を探索
-  private findInputBox = (): HTMLElement | null => {
-    const selectors =[
-      '[contenteditable="true"]',
-      'textarea:not([disabled]):not([readonly])'
-    ];
+  private findInputBox(): HTMLElement | null {
+    const selectors = ['[contenteditable="true"]', 'textarea:not([disabled]):not([readonly])'];
 
     for (const s of selectors) {
       const elements = document.querySelectorAll(s);
@@ -60,10 +57,10 @@ export class DomObserver {
       }
     }
     return null;
-  };
+  }
 
   //* 要素が有効な入力欄かどうかを判定
-  private isValidInput = (el: HTMLElement): boolean => {
+  private isValidInput(el: HTMLElement): boolean {
     if (!el || !el.isConnected) return false;
 
     const style = window.getComputedStyle(el);
@@ -75,5 +72,5 @@ export class DomObserver {
       rect.width > 0 &&
       rect.height > 0
     );
-  };
+  }
 }

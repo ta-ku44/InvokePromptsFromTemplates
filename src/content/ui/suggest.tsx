@@ -1,8 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import getCaretCoordinates from 'textarea-caret';
-import { loadStoredData } from '../utils/storage';
-import type { Template, Category, StorageData } from '../types';
+import { loadStoredData } from '../../utils/storage';
+import type { Template, Category, StorageData } from '../../types';
 import './styles.scss';
 
 let root: Root | null = null;
@@ -10,11 +10,11 @@ let rootEl: HTMLElement | null = null;
 let cachedData: StorageData | null = null;
 let cachePromise: Promise<StorageData> | null = null;
 
-export const showSuggest = async (
+export async function showSuggest(
   curInputEl: HTMLElement,
   query: string,
   onInsert: (template: Template) => void
-): Promise<void> => {
+): Promise<void> {
   if (!curInputEl) return;
 
   const data = await getCachedData();
@@ -43,16 +43,16 @@ export const showSuggest = async (
       onClose={hideSuggest}
     />
   );
-};
+}
 
-export const hideSuggest = () => {
+export function hideSuggest(): void {
   root?.unmount();
   root = null;
   rootEl?.remove();
   rootEl = null;
-};
+}
 
-const adjustDrawingLocation = (el: HTMLElement) => {
+function adjustDrawingLocation(el: HTMLElement): void {
   if (!rootEl) return;
   const rect = el.getBoundingClientRect();
   let left = rect.left;
@@ -86,10 +86,10 @@ const adjustDrawingLocation = (el: HTMLElement) => {
 
   rootEl.style.left = `${window.scrollX + left}px`;
   rootEl.style.top = showAbove ? `${window.scrollY + rect.top - height - 15}px` : `${window.scrollY + rect.bottom}px`;
-};
+}
 
 //* キャッシュデータを取得
-const getCachedData = async (): Promise<StorageData> => {
+async function getCachedData(): Promise<StorageData> {
   if (cachedData) return cachedData;
   if (cachePromise) return cachePromise;
 
@@ -100,12 +100,12 @@ const getCachedData = async (): Promise<StorageData> => {
   });
 
   return cachePromise;
-};
+}
 
 //* キャッシュをクリア
-export const clearCachedData = () => {
+export function clearCachedData(): void {
   cachedData = null;
-};
+}
 
 interface SuggestProps {
   templates: Template[];
