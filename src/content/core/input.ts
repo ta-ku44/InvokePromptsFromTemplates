@@ -1,4 +1,9 @@
-import { insertIntoTextArea, insertIntoDiv } from '../utils/editor';
+import {
+  insertIntoTextArea,
+  selectVariableInTextArea,
+  insertIntoContentEditable,
+  selectVariableInContentEditable,
+} from '../utils/editor';
 
 export class InputProcessor {
   private inputBox: HTMLElement;
@@ -12,9 +17,10 @@ export class InputProcessor {
     this.onQueryChange = onQueryChange;
   }
 
-  public readInputContent() {
+  public readInputContent = () => {
     const text = this.inputBox instanceof HTMLTextAreaElement ? this.inputBox.value : this.inputBox.innerText;
     const match = text.match(this.getRegex());
+
     try {
       if (!match) {
         this.onQueryChange(null);
@@ -24,7 +30,7 @@ export class InputProcessor {
     } catch (error) {
       console.error('handleInputでエラーを検出:', error);
     }
-  }
+  };
 
   public insertPrompt(prompt: string): void {
     const inputBox = this.inputBox;
@@ -35,7 +41,7 @@ export class InputProcessor {
       insertIntoTextArea(inputBox, this.getRegex(), prompt);
     } else if (inputBox instanceof HTMLDivElement) {
       // contenteditable への挿入
-      insertIntoDiv(inputBox, this.getRegex(), prompt);
+      insertIntoContentEditable(inputBox, this.getRegex(), prompt);
     } else {
       console.error('Unsupported element type:', inputBox.tagName);
       return;
@@ -50,16 +56,31 @@ export class InputProcessor {
   }
 
   private placeholder(prompt: string): void {
-    const match = prompt.match(/\{\{(\w+)\}\}/);
-    if (!match) return;
+    const matches = [...prompt.matchAll(/\{\{([^}]*)\}\}/g)]; // {{variable}}の形式
+    if (matches.length === 0) {
+      console.log('No placeholders found');
+      return;
+    }
+    console.log(
+      'Found placeholders:',
+      matches.map((m) => m[1])
+    );
 
-    if (match.length == 1) {
+    if (matches.length === 1) {
       // TODO: 変数を削除しその位置にフォーカス
-      const deletedLength = this.deleteVariable(match);
-      this.moveToVariable(deletedLength);
+      const variable = matches[0][0];
+
+      if (this.inputBox instanceof HTMLTextAreaElement) {
+        selectVariableInTextArea(variable, this.inputBox);
+      } else if (this.inputBox instanceof HTMLDivElement) {
+        selectVariableInContentEditable(variable, this.inputBox);
+      }
     } else {
       // TODO: モーダルを描画して変数選択
-      this.viewModel(match);
+      console.log(
+        '複数の変数が存在します:',
+        matches.map((m) => m[0])
+      );
     }
   }
 
@@ -77,12 +98,4 @@ export class InputProcessor {
     this.cachedRegex = new RegExp(`(?:^|\\s)${escapedKey}(\\S*)$`);
     return this.cachedRegex;
   }
-
-  private deleteVariable(match: RegExpMatchArray): number {
-    return 0;
-  }
-
-  private moveToVariable(deletedLength: number): void {}
-
-  private viewModel(match: RegExpMatchArray): void {}
 }

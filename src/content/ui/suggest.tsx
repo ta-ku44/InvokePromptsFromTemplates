@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import getCaretCoordinates from 'textarea-caret';
 import { loadStoredData } from '../../utils/storage';
 import type { Template, Category, StorageData } from '../../types';
-import './styles.scss';
+import '../styles.scss';
 
 let root: Root | null = null;
 let rootEl: HTMLElement | null = null;

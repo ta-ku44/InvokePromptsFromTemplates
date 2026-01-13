@@ -19,7 +19,7 @@ function detectEditorType(el: HTMLDivElement): EditorType {
   }
 
   return 'unknown';
-};
+}
 
 //* ProseMirrorタイプを判定
 function detectProseMirrorType(el: HTMLDivElement): ProseMirrorType {
@@ -27,7 +27,7 @@ function detectProseMirrorType(el: HTMLDivElement): ProseMirrorType {
     return 'tiptap';
   }
   return 'prosemirror';
-};
+}
 
 export function insertIntoTextArea(el: HTMLTextAreaElement, regex: RegExp, prompt: string): void {
   const currentText = el.value;
@@ -38,9 +38,9 @@ export function insertIntoTextArea(el: HTMLTextAreaElement, regex: RegExp, promp
   el.value = newText;
   el.selectionStart = el.selectionEnd = newText.length;
   el.dispatchEvent(new Event('input', { bubbles: true }));
-};
+}
 
-export function insertIntoDiv(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
+export function insertIntoContentEditable(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
   const editorType = detectEditorType(inputBox);
 
   if (editorType === 'Lexical') {
@@ -50,7 +50,7 @@ export function insertIntoDiv(inputBox: HTMLDivElement, regex: RegExp, prompt: s
   } else {
     handleGenericInsert(inputBox, prompt);
   }
-};
+}
 
 //* ProseMirror エディタへの挿入
 function handleProseMirrorInsert(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
@@ -61,7 +61,7 @@ function handleProseMirrorInsert(inputBox: HTMLDivElement, regex: RegExp, prompt
   } else {
     handleContentEditableInsert(inputBox, prompt);
   }
-};
+}
 
 //* innerTextからの挿入
 function insertFromInnerText(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
@@ -77,7 +77,7 @@ function insertFromInnerText(inputBox: HTMLDivElement, regex: RegExp, prompt: st
     console.warn('ProseMirror innerText insert failed:', error);
     handleContentEditableInsert(inputBox, prompt);
   }
-};
+}
 
 //* execCommandによる挿入を試行
 function tryExecCommandInsert(inputBox: HTMLDivElement, text: string): boolean {
@@ -96,7 +96,7 @@ function tryExecCommandInsert(inputBox: HTMLDivElement, text: string): boolean {
     console.warn('execCommand insert failed:', error);
     return false;
   }
-};
+}
 
 //* ContentEditable共通挿入処理
 function handleContentEditableInsert(inputBox: HTMLDivElement, prompt: string): void {
@@ -108,7 +108,7 @@ function handleContentEditableInsert(inputBox: HTMLDivElement, prompt: string): 
 
   moveCursorToEnd(inputBox);
   inputBox.dispatchEvent(new Event('change', { bubbles: true }));
-};
+}
 
 //* フォールバック挿入処理
 function fallbackInsert(inputBox: HTMLDivElement, text: string): void {
@@ -126,10 +126,10 @@ function fallbackInsert(inputBox: HTMLDivElement, text: string): void {
     inputBox.textContent = text;
     inputBox.dispatchEvent(new Event('input', { bubbles: true }));
   }
-};
+}
 
 //* 汎用的な挿入処理
- function handleGenericInsert(inputBox: HTMLDivElement, prompt: string): void {
+function handleGenericInsert(inputBox: HTMLDivElement, prompt: string): void {
   const textToInsert = prompt + '  ';
 
   if (!tryExecCommandInsert(inputBox, textToInsert)) {
@@ -137,7 +137,7 @@ function fallbackInsert(inputBox: HTMLDivElement, text: string): void {
     moveCursorToEnd(inputBox);
     inputBox.dispatchEvent(new Event('input', { bubbles: true }));
   }
-};
+}
 
 //* カーソルを末尾に移動
 function moveCursorToEnd(el: HTMLDivElement): void {
@@ -153,4 +153,40 @@ function moveCursorToEnd(el: HTMLDivElement): void {
   } catch (error) {
     console.warn('Failed to move cursor:', error);
   }
-};
+}
+
+export function selectVariableInTextArea(variable: string, el: HTMLTextAreaElement): void {
+  const text = el.value;
+  const index = text.lastIndexOf(variable); // 最後に挿入された変数
+
+  if (index !== -1) {
+    el.focus();
+    el.setSelectionRange(index, index + variable.length);
+  }
+}
+
+export function selectVariableInContentEditable(variable: string, el: HTMLDivElement): void {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  // TreeWalker でテキストノードを検索
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const text = node.textContent || '';
+    const index = text.indexOf(variable);
+
+    if (index !== -1) {
+      // Range を作成して選択
+      const range = document.createRange();
+      range.setStart(node, index);
+      range.setEnd(node, index + variable.length);
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+      el.focus();
+      break;
+    }
+  }
+}
