@@ -1,7 +1,23 @@
 type EditorType = 'Lexical' | 'ProseMirror' | 'unknown';
-type ProseMirrorType = 'tiptap' | 'prosemirror';
+type ProseMirrorType = 'Tiptap' | 'normal';
 
-//* エディタータイプを判定
+export function insertIntoInputBox(el: HTMLElement, regex: RegExp, prompt: string): void {
+  if (el instanceof HTMLTextAreaElement) {
+    insertIntoTextArea(el, regex, prompt);
+  } else if (el instanceof HTMLDivElement) {
+    insertIntoContentEditable(el, regex, prompt);
+  }
+}
+
+export function focusAtPlaceholderAndClear(variable: string, el: HTMLElement): void {
+  if (el instanceof HTMLTextAreaElement) {
+    deleteAndFocusInTextArea(variable, el);
+  } else if (el instanceof HTMLDivElement) {
+    deleteAndFocusInContentEditable(variable, el);
+  }
+}
+
+//* リッチテキストエディターのタイプを判定
 function detectEditorType(el: HTMLDivElement): EditorType {
   if (
     el.getAttribute('data-lexical-editor') === 'true' ||
@@ -24,12 +40,12 @@ function detectEditorType(el: HTMLDivElement): EditorType {
 //* ProseMirrorタイプを判定
 function detectProseMirrorType(el: HTMLDivElement): ProseMirrorType {
   if ((el as any).__tiptapEditor || el.closest('.tiptap') || el.closest("[data-editor='tiptap']")) {
-    return 'tiptap';
+    return 'Tiptap';
   }
-  return 'prosemirror';
+  return 'normal';
 }
 
-export function insertIntoTextArea(el: HTMLTextAreaElement, regex: RegExp, prompt: string): void {
+function insertIntoTextArea(el: HTMLTextAreaElement, regex: RegExp, prompt: string): void {
   const currentText = el.value;
   const newText = currentText.replace(regex, (match) => {
     const leadingSpace = match.startsWith(' ') ? ' ' : '';
@@ -40,7 +56,7 @@ export function insertIntoTextArea(el: HTMLTextAreaElement, regex: RegExp, promp
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-export function insertIntoContentEditable(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
+function insertIntoContentEditable(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
   const editorType = detectEditorType(inputBox);
 
   if (editorType === 'Lexical') {
@@ -56,11 +72,23 @@ export function insertIntoContentEditable(inputBox: HTMLDivElement, regex: RegEx
 function handleProseMirrorInsert(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
   const pmType = detectProseMirrorType(inputBox);
 
-  if (pmType === 'prosemirror') {
+  if (pmType === 'normal') {
     insertFromInnerText(inputBox, regex, prompt);
   } else {
     handleContentEditableInsert(inputBox, prompt);
   }
+}
+
+//* ContentEditable共通挿入処理
+function handleContentEditableInsert(inputBox: HTMLDivElement, prompt: string): void {
+  const textToInsert = prompt + '  ';
+
+  if (!tryExecCommandInsert(inputBox, textToInsert)) {
+    fallbackInsert(inputBox, textToInsert);
+  }
+
+  moveCursorToEnd(inputBox);
+  inputBox.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 //* innerTextからの挿入
@@ -96,18 +124,6 @@ function tryExecCommandInsert(inputBox: HTMLDivElement, text: string): boolean {
     console.warn('execCommand insert failed:', error);
     return false;
   }
-}
-
-//* ContentEditable共通挿入処理
-function handleContentEditableInsert(inputBox: HTMLDivElement, prompt: string): void {
-  const textToInsert = prompt + '  ';
-
-  if (!tryExecCommandInsert(inputBox, textToInsert)) {
-    fallbackInsert(inputBox, textToInsert);
-  }
-
-  moveCursorToEnd(inputBox);
-  inputBox.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 //* フォールバック挿入処理
@@ -155,21 +171,26 @@ function moveCursorToEnd(el: HTMLDivElement): void {
   }
 }
 
-export function selectVariableInTextArea(variable: string, el: HTMLTextAreaElement): void {
+function deleteAndFocusInTextArea(variable: string, el: HTMLTextAreaElement): void {
   const text = el.value;
-  const index = text.lastIndexOf(variable); // 最後に挿入された変数
+  const index = text.lastIndexOf(variable);
 
-  if (index !== -1) {
-    el.focus();
-    el.setSelectionRange(index, index + variable.length);
-  }
+  if (index === -1) return;
+
+  const before = text.substring(0, index);
+  const after = text.substring(index + variable.length);
+  el.value = before + after;
+
+  el.focus();
+  el.setSelectionRange(index, index);
+
+  el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-export function selectVariableInContentEditable(variable: string, el: HTMLDivElement): void {
+function deleteAndFocusInContentEditable(variable: string, el: HTMLDivElement): void {
   const selection = window.getSelection();
   if (!selection) return;
 
-  // TreeWalker でテキストノードを検索
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
 
   let node: Node | null;
@@ -178,14 +199,22 @@ export function selectVariableInContentEditable(variable: string, el: HTMLDivEle
     const index = text.indexOf(variable);
 
     if (index !== -1) {
-      // Range を作成して選択
-      const range = document.createRange();
-      range.setStart(node, index);
-      range.setEnd(node, index + variable.length);
+      try {
+        const range = document.createRange();
+        range.setStart(node, index);
+        range.setEnd(node, index + variable.length);
 
-      selection.removeAllRanges();
-      selection.addRange(range);
-      el.focus();
+        range.deleteContents();
+        range.collapse(true);
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+        el.focus();
+
+        el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      } catch (error) {
+        console.error('Failed to delete and focus:', error);
+      }
       break;
     }
   }

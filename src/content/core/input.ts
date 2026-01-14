@@ -1,9 +1,4 @@
-import {
-  insertIntoTextArea,
-  selectVariableInTextArea,
-  insertIntoContentEditable,
-  selectVariableInContentEditable,
-} from '../utils/editor';
+import { insertIntoInputBox, focusAtPlaceholderAndClear } from '../utils/editor';
 
 export class InputProcessor {
   private inputBox: HTMLElement;
@@ -34,18 +29,8 @@ export class InputProcessor {
 
   public insertPrompt(prompt: string): void {
     const inputBox = this.inputBox;
-
-    if (inputBox instanceof HTMLTextAreaElement) {
-      // textarea への挿入
-
-      insertIntoTextArea(inputBox, this.getRegex(), prompt);
-    } else if (inputBox instanceof HTMLDivElement) {
-      // contenteditable への挿入
-      insertIntoContentEditable(inputBox, this.getRegex(), prompt);
-    } else {
-      console.error('Unsupported element type:', inputBox.tagName);
-      return;
-    }
+    // テキスト挿入
+    insertIntoInputBox(inputBox, this.getRegex(), prompt);
 
     // プレースホルダー処理
     requestAnimationFrame(() => {
@@ -57,31 +42,26 @@ export class InputProcessor {
 
   private placeholder(prompt: string): void {
     const matches = [...prompt.matchAll(/\{\{([^}]*)\}\}/g)]; // {{variable}}の形式
-    if (matches.length === 0) {
-      console.log('No placeholders found');
-      return;
-    }
-    console.log(
-      'Found placeholders:',
-      matches.map((m) => m[1])
-    );
+    if (matches.length === 0) return;
 
     if (matches.length === 1) {
-      // TODO: 変数を削除しその位置にフォーカス
+      // 変数を削除してフォーカス
       const variable = matches[0][0];
-
-      if (this.inputBox instanceof HTMLTextAreaElement) {
-        selectVariableInTextArea(variable, this.inputBox);
-      } else if (this.inputBox instanceof HTMLDivElement) {
-        selectVariableInContentEditable(variable, this.inputBox);
-      }
+      focusAtPlaceholderAndClear(variable, this.inputBox);
     } else {
       // TODO: モーダルを描画して変数選択
-      console.log(
-        '複数の変数が存在します:',
-        matches.map((m) => m[0])
-      );
+      this.showVariableModal(matches);
     }
+  }
+
+  private showVariableModal(matches: RegExpMatchArray[]): void {
+    const variables = matches.map((m) => m[1]);
+
+    // モーダルを表示して変数入力を受け取る
+
+    const onSubmit = (values: Record<string, string>) => {
+      
+    };
   }
 
   public updateKey(newKey: string): void {
@@ -91,7 +71,7 @@ export class InputProcessor {
     }
   }
 
-  //* 正規表現を取得
+  //* 入力形式の正規表現を取得
   private getRegex(): RegExp {
     if (this.cachedRegex) return this.cachedRegex;
     const escapedKey = this.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -27,7 +27,10 @@ export async function showSuggest(
   if (!rootEl) {
     rootEl = Object.assign(document.createElement('div'), {
       id: 'pl-suggest-root',
-      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden;`,
+      style:
+          `position:absolute;
+          z-index:${Number.MAX_SAFE_INTEGER};
+          visibility:hidden;`,
     });
 
     document.body.appendChild(rootEl);
