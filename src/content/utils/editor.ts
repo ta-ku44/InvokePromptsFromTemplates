@@ -1,6 +1,7 @@
 type EditorType = 'Lexical' | 'ProseMirror' | 'unknown';
 type ProseMirrorType = 'Tiptap' | 'normal';
 
+//* 入力欄にテキストを挿入
 export function insertIntoInputBox(el: HTMLElement, regex: RegExp, prompt: string): void {
   if (el instanceof HTMLTextAreaElement) {
     insertIntoTextArea(el, regex, prompt);
@@ -9,11 +10,20 @@ export function insertIntoInputBox(el: HTMLElement, regex: RegExp, prompt: strin
   }
 }
 
+//* 変数1個用: 削除してフォーカス
 export function focusAtPlaceholderAndClear(variable: string, el: HTMLElement): void {
+  const position = deleteVariable(variable, el);
+  if (position !== null) {
+    focusAtPosition(el, position);
+  }
+}
+
+//* モーダル用: 複数変数を一括置換
+export function replaceVariables(replacements: Record<string, string>, el: HTMLElement): void {
   if (el instanceof HTMLTextAreaElement) {
-    deleteAndFocusInTextArea(variable, el);
+    replaceVariablesInTextArea(replacements, el);
   } else if (el instanceof HTMLDivElement) {
-    deleteAndFocusInContentEditable(variable, el);
+    replaceVariablesInContentEditable(replacements, el);
   }
 }
 
@@ -79,18 +89,6 @@ function handleProseMirrorInsert(inputBox: HTMLDivElement, regex: RegExp, prompt
   }
 }
 
-//* ContentEditable共通挿入処理
-function handleContentEditableInsert(inputBox: HTMLDivElement, prompt: string): void {
-  const textToInsert = prompt + '  ';
-
-  if (!tryExecCommandInsert(inputBox, textToInsert)) {
-    fallbackInsert(inputBox, textToInsert);
-  }
-
-  moveCursorToEnd(inputBox);
-  inputBox.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
 //* innerTextからの挿入
 function insertFromInnerText(inputBox: HTMLDivElement, regex: RegExp, prompt: string): void {
   try {
@@ -104,6 +102,29 @@ function insertFromInnerText(inputBox: HTMLDivElement, regex: RegExp, prompt: st
   } catch (error) {
     console.warn('ProseMirror innerText insert failed:', error);
     handleContentEditableInsert(inputBox, prompt);
+  }
+}
+
+//* ContentEditable共通挿入処理
+function handleContentEditableInsert(inputBox: HTMLDivElement, prompt: string): void {
+  const textToInsert = prompt + '  ';
+
+  if (!tryExecCommandInsert(inputBox, textToInsert)) {
+    fallbackInsert(inputBox, textToInsert);
+  }
+
+  moveCursorToEnd(inputBox);
+  inputBox.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+//* 汎用的な挿入処理
+function handleGenericInsert(inputBox: HTMLDivElement, prompt: string): void {
+  const textToInsert = prompt + '  ';
+
+  if (!tryExecCommandInsert(inputBox, textToInsert)) {
+    inputBox.textContent = textToInsert;
+    moveCursorToEnd(inputBox);
+    inputBox.dispatchEvent(new Event('input', { bubbles: true }));
   }
 }
 
@@ -144,14 +165,104 @@ function fallbackInsert(inputBox: HTMLDivElement, text: string): void {
   }
 }
 
-//* 汎用的な挿入処理
-function handleGenericInsert(inputBox: HTMLDivElement, prompt: string): void {
-  const textToInsert = prompt + '  ';
+//* 変数を削除して削除位置を返す
+function deleteVariable(variable: string, el: HTMLElement): number | null {
+  if (el instanceof HTMLTextAreaElement) {
+    return deleteVariableInTextArea(variable, el);
+  } else if (el instanceof HTMLDivElement) {
+    return deleteVariableInContentEditable(variable, el);
+  }
+  return null;
+}
 
-  if (!tryExecCommandInsert(inputBox, textToInsert)) {
-    inputBox.textContent = textToInsert;
-    moveCursorToEnd(inputBox);
-    inputBox.dispatchEvent(new Event('input', { bubbles: true }));
+//* textarea で変数を削除
+function deleteVariableInTextArea(variable: string, el: HTMLTextAreaElement): number | null {
+  const text = el.value;
+  const index = text.lastIndexOf(variable);
+
+  if (index === -1) return null;
+
+  const before = text.substring(0, index);
+  const after = text.substring(index + variable.length);
+  el.value = before + after;
+
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+
+  return index;
+}
+
+//* contenteditable で変数を削除
+function deleteVariableInContentEditable(variable: string, el: HTMLDivElement): number | null {
+  const selection = window.getSelection();
+  if (!selection) return null;
+
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+
+  let currentPos = 0;
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const text = node.textContent || '';
+    const index = text.lastIndexOf(variable);
+
+    if (index !== -1) {
+      try {
+        const range = document.createRange();
+        range.setStart(node, index);
+        range.setEnd(node, index + variable.length);
+
+        range.deleteContents();
+
+        el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+
+        return currentPos + index;
+      } catch (error) {
+        console.error('Failed to delete variable:', error);
+        return null;
+      }
+    }
+
+    currentPos += text.length;
+  }
+
+  return null;
+}
+
+//* 指定位置にフォーカス
+function focusAtPosition(el: HTMLElement, position: number): void {
+  if (el instanceof HTMLTextAreaElement) {
+    el.focus();
+    el.setSelectionRange(position, position);
+  } else if (el instanceof HTMLDivElement) {
+    focusAtPositionInContentEditable(el, position);
+  }
+}
+
+function focusAtPositionInContentEditable(el: HTMLDivElement, position: number): void {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+
+  let currentPos = 0;
+  let node: Node | null;
+
+  while ((node = walker.nextNode())) {
+    const text = node.textContent || '';
+    const nodeLength = text.length;
+
+    if (currentPos + nodeLength >= position) {
+      const offset = position - currentPos;
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.collapse(true);
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+      el.focus();
+      break;
+    }
+
+    currentPos += nodeLength;
   }
 }
 
@@ -171,51 +282,35 @@ function moveCursorToEnd(el: HTMLDivElement): void {
   }
 }
 
-function deleteAndFocusInTextArea(variable: string, el: HTMLTextAreaElement): void {
-  const text = el.value;
-  const index = text.lastIndexOf(variable);
+function replaceVariablesInTextArea(replacements: Record<string, string>, el: HTMLTextAreaElement): void {
+  let text = el.value;
 
-  if (index === -1) return;
+  // 全ての変数を置換
+  Object.entries(replacements).forEach(([variable, value]) => {
+    const placeholder = `{{${variable}}}`;
+    text = text.replaceAll(placeholder, value);
+  });
 
-  const before = text.substring(0, index);
-  const after = text.substring(index + variable.length);
-  el.value = before + after;
+  el.value = text;
 
+  // 末尾にフォーカス
   el.focus();
-  el.setSelectionRange(index, index);
-
+  el.setSelectionRange(text.length, text.length);
   el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-function deleteAndFocusInContentEditable(variable: string, el: HTMLDivElement): void {
-  const selection = window.getSelection();
-  if (!selection) return;
+function replaceVariablesInContentEditable(replacements: Record<string, string>, el: HTMLDivElement): void {
+  let text = el.innerText;
 
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  // 全ての変数を置換
+  Object.entries(replacements).forEach(([variable, value]) => {
+    const placeholder = `{{${variable}}}`;
+    text = text.replaceAll(placeholder, value);
+  });
 
-  let node: Node | null;
-  while ((node = walker.nextNode())) {
-    const text = node.textContent || '';
-    const index = text.indexOf(variable);
+  el.innerText = text;
 
-    if (index !== -1) {
-      try {
-        const range = document.createRange();
-        range.setStart(node, index);
-        range.setEnd(node, index + variable.length);
-
-        range.deleteContents();
-        range.collapse(true);
-
-        selection.removeAllRanges();
-        selection.addRange(range);
-        el.focus();
-
-        el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-      } catch (error) {
-        console.error('Failed to delete and focus:', error);
-      }
-      break;
-    }
-  }
+  // 末尾にフォーカス
+  moveCursorToEnd(el);
+  el.dispatchEvent(new InputEvent('input', { bubbles: true }));
 }
