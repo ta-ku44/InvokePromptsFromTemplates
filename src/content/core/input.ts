@@ -1,4 +1,5 @@
-import { insertIntoInputBox, focusAtPlaceholderAndClear } from '../utils/editor';
+import { insertIntoInputBox, /*focusAtPlaceholderAndClear,*/ replaceVariables } from '../utils/editor';
+import { showModal } from '../ui/model';
 
 export class InputProcessor {
   private inputBox: HTMLElement;
@@ -41,27 +42,14 @@ export class InputProcessor {
   }
 
   private placeholder(prompt: string): void {
-    const matches = [...prompt.matchAll(/\{\{([^}]*)\}\}/g)]; // {{variable}}の形式
+    const matches = [...prompt.matchAll(/\{\{([^}]+)\}\}/g)]; // {{variable}}の形式
     if (matches.length === 0) return;
 
-    if (matches.length === 1) {
-      // 変数を削除してフォーカス
-      const variable = matches[0][0];
-      focusAtPlaceholderAndClear(variable, this.inputBox);
-    } else {
-      // TODO: モーダルを描画して変数選択
-      this.showVariableModal(matches);
-    }
-  }
-
-  private showVariableModal(matches: RegExpMatchArray[]): void {
     const variables = matches.map((m) => m[1]);
 
-    // モーダルを表示して変数入力を受け取る
-
-    const onSubmit = (values: Record<string, string>) => {
-      
-    };
+    showModal(variables, (replacements: Record<string, string>) => {
+      replaceVariables(replacements, this.inputBox);
+    });
   }
 
   public updateKey(newKey: string): void {

@@ -4,7 +4,7 @@ import { showSuggest, hideSuggest, clearCachedData } from './ui/suggest.tsx';
 import browser from 'webextension-polyfill';
 
 let inputProcessor: InputProcessor | null = null;
-let key = '#';
+let key: string = '#';
 let curInputBox: HTMLElement | null = null;
 
 async function init() {
