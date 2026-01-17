@@ -8,9 +8,7 @@ let key: string = '#';
 let curInputBox: HTMLElement | null = null;
 
 async function init() {
-  console.log('PromptLibrary content script initialized');
   await loadKey();
-  console.log('Key loaded:', key);
 
   const domObserver = new DomObserver({
     onFound: setup,
@@ -18,7 +16,6 @@ async function init() {
   });
 
   domObserver.start();
-  console.log('DOM Observer started');
 
   window.addEventListener('beforeunload', () => {
     domObserver.stop();
@@ -33,10 +30,8 @@ function setup(el: HTMLElement): void {
   inputProcessor = new InputProcessor(curInputBox, key, (query) => {
     if (query !== null) {
       showSuggest(curInputBox!, query, (template) => inputProcessor?.insertPrompt(template.content));
-      console.log('Query detected, showing suggestions');
     } else {
       hideSuggest();
-      console.log('No query detected.');
     }
   });
   curInputBox.addEventListener('input', inputProcessor.readInputContent);
